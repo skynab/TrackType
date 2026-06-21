@@ -12,17 +12,15 @@ set(CMAKE_AUTOUIC ON)
 find_package(Qt6 QUIET COMPONENTS Core Gui Widgets)
 if(Qt6_FOUND)
     set(QT Qt6)
-    find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Svg)
-    find_package(Qt6 OPTIONAL_COMPONENTS Multimedia LinguistTools QUIET)
+    find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Svg Multimedia)
+    find_package(Qt6 OPTIONAL_COMPONENTS LinguistTools QUIET)
     set(LINGUIST_FOUND ${Qt6LinguistTools_FOUND})
-    set(MULTIMEDIA_FOUND ${Qt6Multimedia_FOUND})
     message(STATUS "TrackType: building with Qt6 ${Qt6_VERSION}")
 else()
-    find_package(Qt5 5.12 REQUIRED COMPONENTS Core Gui Widgets Svg)
+    find_package(Qt5 5.12 REQUIRED COMPONENTS Core Gui Widgets Svg Multimedia)
     set(QT Qt5)
-    find_package(Qt5 OPTIONAL_COMPONENTS Multimedia LinguistTools QUIET)
+    find_package(Qt5 OPTIONAL_COMPONENTS LinguistTools QUIET)
     set(LINGUIST_FOUND ${Qt5LinguistTools_FOUND})
-    set(MULTIMEDIA_FOUND ${Qt5Multimedia_FOUND})
     message(STATUS "TrackType: building with Qt5 ${Qt5_VERSION}")
 endif()
 
@@ -31,6 +29,8 @@ set(SOURCES
     mainwindow.cpp
     clickinjector.cpp
     settingsdialog.cpp
+    audiocapture.cpp
+    levelmeter.cpp
     translations/tsparser.cpp
     resources.qrc
 )
@@ -39,6 +39,8 @@ set(HEADERS
     mainwindow.h
     clickinjector.h
     settingsdialog.h
+    audiocapture.h
+    levelmeter.h
 )
 
 if(WIN32)
@@ -69,13 +71,10 @@ if(DEFINED BUILD_NUMBER)
     target_compile_definitions(TrackType PRIVATE BUILD_NUMBER=${BUILD_NUMBER})
 endif()
 
-if(MULTIMEDIA_FOUND)
-    target_link_libraries(TrackType PRIVATE ${QT}::Multimedia)
-    target_compile_definitions(TrackType PRIVATE HAVE_MULTIMEDIA)
-    message(STATUS "TrackType: audio support enabled")
-else()
-    message(STATUS "TrackType: audio support disabled (Qt Multimedia not found)")
-endif()
+# Qt Multimedia is a hard dependency: audio support is always compiled in.
+target_link_libraries(TrackType PRIVATE ${QT}::Multimedia)
+target_compile_definitions(TrackType PRIVATE HAVE_MULTIMEDIA)
+message(STATUS "TrackType: audio support enabled (Qt Multimedia required)")
 
 if(WIN32)
     target_link_libraries(TrackType PRIVATE user32)

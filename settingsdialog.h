@@ -22,6 +22,9 @@ struct AppSettings {
     // Audio feedback
     bool audioFeedback = false;
 
+    // Capture microphone: persisted AudioCapture device id ("" = system default)
+    QString inputDevice;
+
     // Language (ISO code: "en", "fr", "es", "zh_CN", "ja", "ko", …)
     QString language = "en";
 
@@ -83,6 +86,8 @@ private:
     QCheckBox*   m_chkXMinimizesApp;
     QCheckBox*   m_chkLaunchOnStartup;
     QCheckBox*   m_chkAudio;
+    QLabel*      m_lblInputDevice = nullptr;
+    QComboBox*   m_cmbInputDevice = nullptr;
     QComboBox*   m_cmbLanguage;
 
     // Edge lock

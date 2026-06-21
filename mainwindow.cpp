@@ -24,6 +24,8 @@
 #include <QProcess>
 #include <QTemporaryFile>
 #include "translations/tsparser.h"
+#include "audiocapture.h"
+#include "levelmeter.h"
 #ifdef Q_OS_MAC
 #  include "macos_utils.h"
 #endif
@@ -80,6 +82,7 @@ MainWindow::MainWindow(QTranslator* startupTranslator, QWidget* parent)
     m_settings.xMinimizesApp   = m_persist.value("window/xMinimizesApp",    false).toBool();
     m_settings.launchOnStartup = m_persist.value("window/launchOnStartup",  false).toBool();
     m_settings.audioFeedback   = m_persist.value("audio/enabled",    false).toBool();
+    m_settings.inputDevice     = m_persist.value("audio/inputDevice",  "").toString();
     m_settings.language        = m_persist.value("language",          "en").toString();
     m_settings.edgeLock        = static_cast<EdgeLock>(m_persist.value("window/edgeLock", 0).toInt());
     m_settings.edgeHide        = m_persist.value("window/edgeHide", false).toBool();
@@ -117,6 +120,7 @@ MainWindow::MainWindow(QTranslator* startupTranslator, QWidget* parent)
     buildUi();
     buildTray();
     loadWindowSettings();
+    initAudio();
 
     // If launch-on-startup is enabled, make sure the OS registration still
     // exists and points at the current executable (self-heals after updates).
@@ -252,6 +256,11 @@ void MainWindow::buildUi()
     tbLayout->addWidget(m_titleLabel);
     tbLayout->addStretch(1);  // always pushes the action buttons to the right
 
+    // Microphone input-level meter — reuses the app-wide orange QProgressBar
+    // style (BASE_STYLE) so it matches the look of the old dwell countdown.
+    m_levelMeter = new LevelMeter;
+    tbLayout->addWidget(m_levelMeter);
+
     // Settings button
     m_settingsBtn = new QPushButton;
     m_settingsBtn->setIcon(QIcon(":/icons/settings.svg"));
@@ -310,6 +319,19 @@ void MainWindow::buildTray()
 
     m_tray->setContextMenu(m_trayMenu);
     m_tray->show();
+}
+
+void MainWindow::initAudio()
+{
+    // Capture starts at launch so the toolbar meter shows the mic is live; the
+    // captured PCM (raw buffers + STT windows) is published for the speech-to-
+    // text pipeline added in a later step.
+    m_audio = new AudioCapture(this);
+    m_audio->setInputDevice(m_settings.inputDevice);
+    if (m_levelMeter)
+        connect(m_audio, &AudioCapture::levelChanged,
+                m_levelMeter, &LevelMeter::setLevel);
+    m_audio->start();
 }
 
 // ─── Resize / drag the frameless window ──────────────────────────────────
@@ -713,7 +735,16 @@ void MainWindow::applySettings(const AppSettings& s)
     // written by an older build, or points at a stale executable path.
     setLaunchOnStartup(s.launchOnStartup);
     m_persist.setValue("audio/enabled",      s.audioFeedback);
+    m_persist.setValue("audio/inputDevice",  s.inputDevice);
     m_persist.setValue("language",           s.language);
+
+    // Switch the live capture to the chosen microphone (restarts capture if the
+    // device changed); ensure it is running in case it had no device at launch.
+    if (m_audio) {
+        m_audio->setInputDevice(s.inputDevice);
+        if (!m_audio->isCapturing())
+            m_audio->start();
+    }
     m_persist.setValue("window/edgeLock",    static_cast<int>(s.edgeLock));
     m_persist.setValue("window/edgeHide",    s.edgeHide);
     applyEdgeLock();

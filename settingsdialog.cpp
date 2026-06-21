@@ -1,4 +1,5 @@
 #include "settingsdialog.h"
+#include "audiocapture.h"
 #include "translations/tsparser.h"
 #include <QApplication>
 #include <QEvent>
@@ -217,6 +218,8 @@ void SettingsDialog::retranslateUi()
     m_chkXMinimizesApp->setText(tr("Top X minimizes app"));
     m_chkLaunchOnStartup->setText(tr("Launch on system startup (Windows)"));
     m_chkAudio->setText(tr("Audio feedback"));
+    m_lblInputDevice->setText(tr("Microphone:"));
+    m_cmbInputDevice->setItemText(0, tr("System default"));
     m_lblOpacity->setText(tr("Opacity:"));
     m_lblLanguage->setText(tr("Language:"));
     m_resetBtn->setText(tr("Reset to Defaults"));
@@ -319,6 +322,19 @@ void SettingsDialog::buildUi()
     m_chkLaunchOnStartup= new QCheckBox(tr("Launch on system startup (Windows)"));
     m_chkAudio          = new QCheckBox(tr("Audio feedback"));
 
+    // Microphone selection — enumerated from AudioCapture; the first entry is the
+    // system default (empty id) so the app follows OS default-device changes.
+    m_lblInputDevice = new QLabel(tr("Microphone:"));
+    m_cmbInputDevice = new QComboBox;
+    m_cmbInputDevice->setSizeAdjustPolicy(QComboBox::AdjustToContents);
+    m_cmbInputDevice->setMinimumWidth(130);
+    m_cmbInputDevice->addItem(tr("System default"), QString());
+    for (const AudioInputDevice& dev : AudioCapture::availableDevices()) {
+        const QString label = dev.isDefault
+            ? tr("%1 (default)").arg(dev.name) : dev.name;
+        m_cmbInputDevice->addItem(label, dev.id);
+    }
+
     // Language names are shown in their native script — intentionally not tr()
     m_cmbLanguage = new QComboBox;
     m_cmbLanguage->setSizeAdjustPolicy(QComboBox::AdjustToContents);
@@ -350,6 +366,7 @@ void SettingsDialog::buildUi()
     wfl->addRow(m_chkXMinimizesApp);
     wfl->addRow(m_chkLaunchOnStartup);
     wfl->addRow(m_chkAudio);
+    wfl->addRow(m_lblInputDevice, m_cmbInputDevice);
     wfl->addRow(m_lblLanguage,  m_cmbLanguage);
 
 #ifdef Q_OS_MAC
@@ -506,6 +523,11 @@ void SettingsDialog::loadFrom(const AppSettings& s)
     m_chkXMinimizesApp->setChecked(s.xMinimizesApp);
     m_chkLaunchOnStartup->setChecked(s.launchOnStartup);
     m_chkAudio->setChecked(s.audioFeedback);
+
+    // Fall back to "System default" (index 0) when the saved device is gone.
+    const int devIdx = m_cmbInputDevice->findData(s.inputDevice);
+    m_cmbInputDevice->setCurrentIndex(devIdx >= 0 ? devIdx : 0);
+
     for (int i = 0; i < m_cmbLanguage->count(); ++i) {
         if (m_cmbLanguage->itemData(i).toString() == s.language) {
             m_cmbLanguage->setCurrentIndex(i);
@@ -526,6 +548,7 @@ AppSettings SettingsDialog::readUi() const
     s.xMinimizesApp    = m_chkXMinimizesApp->isChecked();
     s.launchOnStartup  = m_chkLaunchOnStartup->isChecked();
     s.audioFeedback    = m_chkAudio->isChecked();
+    s.inputDevice      = m_cmbInputDevice->currentData().toString();
     s.language         = m_cmbLanguage->currentData().toString();
     return s;
 }

@@ -15,6 +15,9 @@
 #include "clickinjector.h"
 #include "settingsdialog.h"
 
+class AudioCapture;
+class LevelMeter;
+
 class MainWindow : public QWidget
 {
     Q_OBJECT
@@ -47,6 +50,7 @@ private slots:
 private:
     void buildUi();
     void buildTray();
+    void initAudio();
     void saveWindowSettings();
     void loadWindowSettings();
     void retranslateUi();
@@ -73,6 +77,7 @@ private:
     QLabel*       m_titleLabel = nullptr;
     QPushButton*  m_settingsBtn= nullptr;
     QPushButton*  m_exitBtn    = nullptr;
+    LevelMeter*   m_levelMeter = nullptr;
 
     // ── State ─────────────────────────────────────────────────
     bool        m_dragging     = false;  // window drag in progress
@@ -88,6 +93,7 @@ private:
     int                 m_edgeHideCountMs = 0;
 
     // ── Sub-objects ───────────────────────────────────────────
+    AudioCapture*     m_audio      = nullptr;
     QSystemTrayIcon*  m_tray       = nullptr;
     QMenu*            m_trayMenu   = nullptr;
     QAction*          m_showAct    = nullptr;
