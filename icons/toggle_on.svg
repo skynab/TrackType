@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+     width="44" height="20" viewBox="0 0 44 20">
+  <defs>
+    <filter id="shadow" width="170%" height="170%" x="-35%" y="-25%" filterUnits="objectBoundingBox">
+      <feOffset dy="2" in="SourceAlpha" result="offset"/>
+      <feGaussianBlur in="offset" result="blur" stdDeviation="2"/>
+      <feColorMatrix in="blur" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.5 0"/>
+    </filter>
+    <rect   id="track" width="44" height="20" rx="10"/>
+    <circle id="thumb" cx="34" cy="10" r="10"/>
+  </defs>
+  <g fill="none" fill-rule="evenodd">
+    <use xlink:href="#track" fill="#FFA600"/>
+    <use xlink:href="#thumb" fill="#000" filter="url(#shadow)"/>
+    <use xlink:href="#thumb" fill="#FFFFFF"/>
+  </g>
+</svg>

@@ -1,0 +1,236 @@
+name: Build
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+jobs:
+  test:
+    name: Unit Tests (${{ matrix.name }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-22.04
+            name: Linux
+          - os: macos-14
+            name: macOS
+          - os: windows-latest
+            name: Windows
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Qt (Linux)
+        if: matrix.name == 'Linux'
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y \
+            qt6-base-dev \
+            libqt6svg6-dev \
+            libgl1-mesa-dev \
+            libx11-dev \
+            libxtst-dev
+
+      - name: Install Qt (macOS)
+        if: matrix.name == 'macOS'
+        env:
+          HOMEBREW_NO_AUTO_UPDATE: 1
+          HOMEBREW_NO_REQUIRE_TAP_TRUST: 1
+        run: |
+          brew install qt
+          echo "$(brew --prefix qt)/bin" >> "$GITHUB_PATH"
+
+      - name: Install Qt (Windows)
+        if: matrix.name == 'Windows'
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.7.*'
+          arch: win64_msvc2019_64
+          cache: true
+
+      - name: Configure
+        run: cmake -B build-tests -DBUILD_TESTS=ON -DCMAKE_BUILD_TYPE=Debug
+
+      - name: Build tests
+        run: cmake --build build-tests --config Debug --parallel
+
+      - name: Run tests
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: ctest --test-dir build-tests -C Debug --output-on-failure
+
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-22.04
+            name: Linux
+          - os: macos-14
+            name: macOS
+          - os: windows-latest
+            name: Windows
+
+    runs-on: ${{ matrix.os }}
+    name: ${{ matrix.name }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # ── Qt: Linux ────────────────────────────────────────────────────────────
+      - name: Install Qt (Linux)
+        if: matrix.name == 'Linux'
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y \
+            qt6-base-dev \
+            libqt6svg6-dev \
+            libgl1-mesa-dev \
+            libx11-dev \
+            libxtst-dev \
+            libxi-dev
+          sudo apt-get install -y qt6-multimedia-dev || true
+          # uinput is needed at runtime on Wayland; ensure the header is present for the build
+          sudo modprobe uinput || true
+
+      # ── Qt: macOS ────────────────────────────────────────────────────────────
+      - name: Install Qt (macOS)
+        if: matrix.name == 'macOS'
+        env:
+          HOMEBREW_NO_AUTO_UPDATE: 1
+          HOMEBREW_NO_REQUIRE_TAP_TRUST: 1
+        run: |
+          brew install qt
+          echo "$(brew --prefix qt)/bin" >> "$GITHUB_PATH"
+
+      # ── Qt: Windows ──────────────────────────────────────────────────────────
+      - name: Install Qt (Windows)
+        if: matrix.name == 'Windows'
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.7.*'
+          arch: win64_msvc2019_64
+          modules: 'qtmultimedia'
+          cache: true
+
+      # ── WiX v4: Windows ──────────────────────────────────────────────────────
+      - name: Install WiX (Windows)
+        if: matrix.name == 'Windows'
+        run: |
+          dotnet tool install --global wix --version "4.*"
+          wix extension add --global WixToolset.UI.wixext/4.0.5
+          wix extension add --global WixToolset.Bal.wixext/4.0.5
+
+      # ── Build ─────────────────────────────────────────────────────────────────
+      - name: Configure
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release -DBUILD_NUMBER=${{ github.run_number }}
+
+      - name: Build
+        run: cmake --build build --config Release --parallel
+
+      # ── Package: Linux ────────────────────────────────────────────────────────
+      - name: Package (Linux)
+        if: matrix.name == 'Linux'
+        run: |
+          # Download linuxdeploy + Qt plugin
+          wget -q https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
+          wget -q https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/continuous/linuxdeploy-plugin-qt-x86_64.AppImage
+          chmod +x linuxdeploy-x86_64.AppImage linuxdeploy-plugin-qt-x86_64.AppImage
+
+          # Install the binary so linuxdeploy can find it
+          DESTDIR=AppDir cmake --install build --prefix /usr
+
+          # linuxdeploy requires the icon filename to match the Icon= entry in the desktop file
+          cp icons/app.svg icons/TrackType.svg
+
+          # Build the AppImage
+          QMAKE=$(which qmake6 || which qmake) \
+          OUTPUT=TrackType-Linux.AppImage \
+          ./linuxdeploy-x86_64.AppImage \
+            --appdir AppDir \
+            --plugin qt \
+            --output appimage \
+            --desktop-file installer/TrackType.desktop \
+            --icon-file icons/TrackType.svg
+
+      # ── Package: macOS ────────────────────────────────────────────────────────
+      - name: Package (macOS)
+        if: matrix.name == 'macOS'
+        run: |
+          macdeployqt build/TrackType.app -dmg
+          mv build/TrackType.dmg TrackType-macOS.dmg
+
+      # ── Package: Windows ──────────────────────────────────────────────────────
+      - name: Package (Windows)
+        if: matrix.name == 'Windows'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path dist -Force
+          Copy-Item build\Release\TrackType.exe dist\
+          windeployqt --release dist\TrackType.exe
+
+          # Generate installer\AppFiles.wxs listing every file windeployqt produced.
+          # WiX v4 <Files> glob is not supported in ComponentGroup; we build the
+          # fragment explicitly so any Qt DLL layout is handled correctly.
+          $distAbs = (Resolve-Path dist).Path
+          $lines = @(
+            '<?xml version="1.0" encoding="UTF-8"?>',
+            '<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">',
+            '  <Fragment>',
+            '    <ComponentGroup Id="AppFiles" Directory="INSTALLFOLDER">'
+          )
+          foreach ($f in (Get-ChildItem -Path $distAbs -Recurse -File)) {
+            $rel    = $f.FullName.Substring($distAbs.Length + 1)
+            $subdir = $f.DirectoryName.Substring($distAbs.Length).TrimStart('\')
+            $attrs  = if ($subdir) { " Subdirectory=`"$subdir`"" } else { '' }
+            $lines += "      <Component$attrs Guid=`"*`">"
+            $lines += "        <File Source=`"dist\$rel`" />"
+            $lines += "      </Component>"
+          }
+          $lines += @('    </ComponentGroup>', '  </Fragment>', '</Wix>')
+          $lines | Set-Content installer\AppFiles.wxs -Encoding UTF8
+
+          Set-Location installer
+          wix build TrackType.wxs AppFiles.wxs -b .. -ext WixToolset.UI.wixext -d BuildNumber=${{ github.run_number }} -o ..\TrackType-Windows.msi
+          Set-Location ..
+          wix build installer\Bundle.wxs -b . -ext WixToolset.Bal.wixext -d BuildNumber=${{ github.run_number }} -o TrackType-Windows-Setup.exe
+
+      # ── Upload artifacts ──────────────────────────────────────────────────────
+      - name: Upload (Linux)
+        if: matrix.name == 'Linux'
+        uses: actions/upload-artifact@v4
+        with:
+          name: TrackType-Linux
+          path: TrackType-Linux.AppImage
+
+      - name: Package .deb (Linux)
+        if: matrix.name == 'Linux'
+        run: |
+          # Build the Debian/Ubuntu package from the CPack config generated at
+          # configure time.  Runs after the AppImage upload so a packaging hiccup
+          # never costs the AppImage artifact.
+          cpack --config build/CPackConfig.cmake -G DEB -B dist-packages
+          ls -la dist-packages
+
+      - name: Upload (Linux .deb)
+        if: matrix.name == 'Linux'
+        uses: actions/upload-artifact@v4
+        with:
+          name: TrackType-Linux-deb
+          path: dist-packages/*.deb
+
+      - name: Upload (macOS)
+        if: matrix.name == 'macOS'
+        uses: actions/upload-artifact@v4
+        with:
+          name: TrackType-macOS
+          path: TrackType-macOS.dmg
+
+      - name: Upload (Windows)
+        if: matrix.name == 'Windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: TrackType-Windows
+          path: TrackType-Windows-Setup.exe

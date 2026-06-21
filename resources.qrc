@@ -1,0 +1,32 @@
+<!DOCTYPE RCC>
+<RCC version="1.0">
+    <qresource prefix="/icons">
+        <file alias="app.svg">icons/app.svg</file>
+        <file alias="optitrack_logo.svg">icons/optitrack_logo.svg</file>
+        <file alias="close.svg">icons/close.svg</file>
+        <file alias="settings.svg">icons/settings.svg</file>
+        <file alias="checkmark.svg">icons/checkmark.svg</file>
+        <file alias="toggle_off.svg">icons/toggle_off.svg</file>
+        <file alias="toggle_on.svg">icons/toggle_on.svg</file>
+    </qresource>
+    <qresource prefix="/sounds">
+        <file alias="click-noise.wav">sounds/click-noise.wav</file>
+    </qresource>
+    <qresource prefix="/linux">
+        <file alias="71-tracktype-input.rules">installer/71-tracktype-input.rules</file>
+    </qresource>
+    <qresource prefix="/translations">
+        <file alias="tracktype_cs.ts">translations/tracktype_cs.ts</file>
+        <file alias="tracktype_fr.ts">translations/tracktype_fr.ts</file>
+        <file alias="tracktype_es.ts">translations/tracktype_es.ts</file>
+        <file alias="tracktype_zh_CN.ts">translations/tracktype_zh_CN.ts</file>
+        <file alias="tracktype_ja.ts">translations/tracktype_ja.ts</file>
+        <file alias="tracktype_ko.ts">translations/tracktype_ko.ts</file>
+        <file alias="tracktype_hi.ts">translations/tracktype_hi.ts</file>
+        <file alias="tracktype_ar.ts">translations/tracktype_ar.ts</file>
+        <file alias="tracktype_bn.ts">translations/tracktype_bn.ts</file>
+        <file alias="tracktype_pt.ts">translations/tracktype_pt.ts</file>
+        <file alias="tracktype_ru.ts">translations/tracktype_ru.ts</file>
+        <file alias="tracktype_ur.ts">translations/tracktype_ur.ts</file>
+    </qresource>
+</RCC>

@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=TrackType
+Comment=Dwell-click accessibility tool
+Exec=TrackType
+Icon=TrackType
+Type=Application
+Categories=Utility;Accessibility;
+StartupWMClass=TrackType

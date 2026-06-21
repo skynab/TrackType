@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?define BuildNumber = "0"?>
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+     xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
+
+  <Package Name="TrackType"
+           Manufacturer="OptiTrack"
+           Version="0.9.2.$(var.BuildNumber)"
+           UpgradeCode="7E8A4B2C-1F3D-4E9A-8B6C-2D5F0A3E7B1C"
+           Language="1033"
+           Compressed="yes">
+
+    <SummaryInformation />
+    <MediaTemplate EmbedCab="yes" />
+
+    <Icon Id="TrackType.ico" SourceFile="..\icons\TrackType.ico" />
+    <Property Id="ARPPRODUCTICON" Value="TrackType.ico" />
+    <Icon Id="TrackTypeApp.ico" SourceFile="..\icons\TrackType.ico" />
+
+    <MajorUpgrade DowngradeErrorMessage="A newer version of TrackType is already installed." />
+
+    <ui:WixUI Id="WixUI_Minimal" />
+    <WixVariable Id="WixUILicenseRtf" Value="License.rtf" />
+    <WixVariable Id="WixUIDialogBmp"  Value="dialog.bmp" />
+    <WixVariable Id="WixUIBannerBmp"  Value="banner.bmp" />
+
+    <StandardDirectory Id="ProgramFiles6432Folder">
+      <Directory Id="INSTALLFOLDER" Name="TrackType" />
+    </StandardDirectory>
+
+    <StandardDirectory Id="ProgramMenuFolder">
+      <Directory Id="AppMenuFolder" Name="TrackType" />
+    </StandardDirectory>
+
+    <StandardDirectory Id="DesktopFolder" />
+
+    <!-- AppFiles ComponentGroup is generated at build time by the workflow -->
+    <ComponentGroup Id="Shortcuts">
+      <Component Id="StartMenuShortcut" Directory="AppMenuFolder" Guid="*">
+        <Shortcut Id="AppStartMenuShortcut"
+                  Name="TrackType"
+                  Description="Virtual mouse / dwell clicker"
+                  Target="[INSTALLFOLDER]TrackType.exe"
+                  WorkingDirectory="INSTALLFOLDER"
+                  Icon="TrackTypeApp.ico" />
+        <RemoveFolder Id="CleanupAppMenuFolder" Directory="AppMenuFolder" On="uninstall" />
+        <RegistryValue Root="HKCU"
+                       Key="Software\TrackType\TrackType"
+                       Name="StartMenuShortcut"
+                       Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+
+      <Component Id="DesktopShortcut" Directory="DesktopFolder" Guid="*">
+        <Shortcut Id="AppDesktopShortcut"
+                  Name="TrackType"
+                  Description="Virtual mouse / dwell clicker"
+                  Target="[INSTALLFOLDER]TrackType.exe"
+                  WorkingDirectory="INSTALLFOLDER"
+                  Icon="TrackTypeApp.ico" />
+        <RegistryValue Root="HKCU"
+                       Key="Software\TrackType\TrackType"
+                       Name="DesktopShortcut"
+                       Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+    </ComponentGroup>
+
+    <Feature Id="ProductFeature" Title="TrackType" Level="1">
+      <ComponentGroupRef Id="AppFiles" />
+      <ComponentGroupRef Id="Shortcuts" />
+    </Feature>
+
+  </Package>
+</Wix>

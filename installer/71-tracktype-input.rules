@@ -1,0 +1,21 @@
+# TrackType — grant the active local-session user read access to pointer
+# input devices.
+#
+# On Wayland, XQueryPointer freezes as soon as the cursor leaves the TrackType
+# window, so the dwell-click timer cannot tell whether the cursor is moving over
+# other applications.  TrackType works around this by reading relative/absolute
+# motion straight from the kernel's evdev nodes (/dev/input/event*), which works
+# regardless of which compositor or surface owns the pointer.
+#
+# Those nodes are owned by root:input and are not readable by an ordinary user.
+# The "uaccess" tag makes systemd-logind apply an ACL granting access to the
+# user of the current foreground session — so no group change and no re-login
+# are required, and access is dropped again when the session ends.
+#
+# Only pointer-class devices are matched; keyboards are deliberately left
+# inaccessible.  If an exotic pointing device (e.g. a head tracker) is not
+# tagged as a pointer by udev and still cannot be read, add a matching line.
+SUBSYSTEM=="input", ENV{ID_INPUT_MOUSE}=="1",         TAG+="uaccess"
+SUBSYSTEM=="input", ENV{ID_INPUT_TOUCHPAD}=="1",      TAG+="uaccess"
+SUBSYSTEM=="input", ENV{ID_INPUT_POINTINGSTICK}=="1", TAG+="uaccess"
+SUBSYSTEM=="input", ENV{ID_INPUT_TABLET}=="1",        TAG+="uaccess"
