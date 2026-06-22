@@ -29,6 +29,10 @@ public:
     // Synthesize `count` Backspace key presses (used to retract live partials).
     static void sendBackspaces(int count);
 
+    // Synthesize `count` Left-arrow key presses (used for caret placement, e.g.
+    // positioning between command-inserted brackets).
+    static void moveCursorLeft(int count);
+
     // Whether synthetic input injection is available for this session.  Retained
     // for the Linux input-access prompt; currently a stub that returns true.
     static bool hasInputDeviceAccess();

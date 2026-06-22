@@ -63,6 +63,7 @@ set(SOURCES
     mainwindow.cpp
     textinjector.cpp
     textnormalizer.cpp
+    transcriptprocessor.cpp
     globalhotkey.cpp
     transcriptpreview.cpp
     settingsdialog.cpp
@@ -79,6 +80,7 @@ set(HEADERS
     mainwindow.h
     textinjector.h
     textnormalizer.h
+    transcriptprocessor.h
     globalhotkey.h
     transcriptpreview.h
     settingsdialog.h
@@ -102,7 +104,13 @@ elseif(APPLE)
         MACOSX_PACKAGE_LOCATION Resources)
     add_executable(TrackType MACOSX_BUNDLE ${SOURCES} ${HEADERS} ${MACOSX_ICON})
     set_target_properties(TrackType PROPERTIES
-        MACOSX_BUNDLE_ICON_FILE TrackType.icns)
+        MACOSX_BUNDLE_ICON_FILE TrackType.icns
+        MACOSX_BUNDLE_GUI_IDENTIFIER com.optitrack.tracktype
+        MACOSX_BUNDLE_BUNDLE_NAME TrackType
+        MACOSX_BUNDLE_SHORT_VERSION_STRING ${PROJECT_VERSION}
+        MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION}
+        # Custom Info.plist: declares NSMicrophoneUsageDescription for dictation.
+        MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/installer/Info.plist.in)
 else()
     add_executable(TrackType ${SOURCES} ${HEADERS})
 endif()

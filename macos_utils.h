@@ -19,6 +19,9 @@ void macTypeUnicode(const QString& text);
 // Synthesize `count` Backspace key presses (used to retract live partials).
 void macSendBackspaces(int count);
 
+// Synthesize `count` Left-arrow key presses (caret placement).
+void macSendLeftArrows(int count);
+
 // Synthesize Cmd+V (the clipboard-paste fallback shortcut).
 void macSendPasteShortcut();
 

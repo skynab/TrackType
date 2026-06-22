@@ -42,6 +42,16 @@ target_include_directories(tst_textnormalizer PRIVATE ${CMAKE_SOURCE_DIR})
 target_link_libraries(tst_textnormalizer PRIVATE ${QT}::Core ${QT}::Test)
 add_test(NAME TextNormalizer COMMAND tst_textnormalizer)
 
+# TranscriptProcessor — command map + dictation passthrough (headless, fast).
+add_executable(tst_transcriptprocessor
+    tst_transcriptprocessor.cpp
+    ${CMAKE_SOURCE_DIR}/transcriptprocessor.cpp
+    ${CMAKE_SOURCE_DIR}/textnormalizer.cpp
+)
+target_include_directories(tst_transcriptprocessor PRIVATE ${CMAKE_SOURCE_DIR})
+target_link_libraries(tst_transcriptprocessor PRIVATE ${QT}::Core ${QT}::Test)
+add_test(NAME TranscriptProcessor COMMAND tst_transcriptprocessor)
+
 # Whisper end-to-end integration test.  Links the vendored whisper static lib and
 # compiles the engine directly.  Runs only when TRACKTYPE_TEST_MODEL points at a
 # real model (otherwise it skips), so the binary always builds but inference runs
@@ -49,6 +59,8 @@ add_test(NAME TextNormalizer COMMAND tst_textnormalizer)
 add_executable(tst_whisperengine
     tst_whisperengine.cpp
     ${CMAKE_SOURCE_DIR}/whisperengine.cpp
+    ${CMAKE_SOURCE_DIR}/transcriptprocessor.cpp
+    ${CMAKE_SOURCE_DIR}/textnormalizer.cpp
     # SttEngine has Q_OBJECT but no .cpp; list the header so AUTOMOC generates its
     # moc (it provides the base-class metaobject/signals WhisperSttEngine needs).
     ${CMAKE_SOURCE_DIR}/sttengine.h

@@ -99,6 +99,24 @@ void TextInjector::sendPasteShortcut()
     SendInput(4, in, sizeof(INPUT));
 }
 
+void TextInjector::moveCursorLeft(int count)
+{
+    if (count <= 0)
+        return;
+    std::vector<INPUT> events;
+    events.reserve(size_t(count) * 2);
+    for (int i = 0; i < count; ++i) {
+        INPUT down{};
+        down.type   = INPUT_KEYBOARD;
+        down.ki.wVk = VK_LEFT;
+        events.push_back(down);
+        INPUT up = down;
+        up.ki.dwFlags = KEYEVENTF_KEYUP;
+        events.push_back(up);
+    }
+    SendInput(UINT(events.size()), events.data(), sizeof(INPUT));
+}
+
 // ─────────────────────────────────────────────────────────────
 //  macOS — CoreGraphics (implemented in macos_utils.mm)
 // ─────────────────────────────────────────────────────────────
@@ -108,6 +126,7 @@ void TextInjector::sendPasteShortcut()
 
 void TextInjector::injectUnicode(const QString& text) { macTypeUnicode(text); }
 void TextInjector::sendBackspaces(int count)          { macSendBackspaces(count); }
+void TextInjector::moveCursorLeft(int count)          { macSendLeftArrows(count); }
 void TextInjector::sendPasteShortcut()                { macSendPasteShortcut(); }
 
 // ─────────────────────────────────────────────────────────────
@@ -331,6 +350,20 @@ void TextInjector::sendPasteShortcut()
     kb.close();
 }
 
+void TextInjector::moveCursorLeft(int count)
+{
+    if (count <= 0)
+        return;
+    if (x11FakeChord(0, XK_Left, count))
+        return;
+    Uinput kb;
+    if (!kb.open())
+        return;
+    for (int i = 0; i < count; ++i)
+        kb.tap(KEY_LEFT, false);
+    kb.close();
+}
+
 // ─────────────────────────────────────────────────────────────
 //  Fallback (unsupported platform)
 // ─────────────────────────────────────────────────────────────
@@ -338,6 +371,7 @@ void TextInjector::sendPasteShortcut()
 
 void TextInjector::injectUnicode(const QString&) {}
 void TextInjector::sendBackspaces(int)           {}
+void TextInjector::moveCursorLeft(int)           {}
 void TextInjector::sendPasteShortcut()           {}
 
 #endif

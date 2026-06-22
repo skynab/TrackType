@@ -44,6 +44,26 @@
     <message><source>No action</source><translation>无操作</translation></message>
     <message><source>Dwell Active</source><translation>悬停激活</translation></message>
     <message><source>Enable dwell-clicking (same as the Auto button)</source><translation>启用悬停点击（与自动按钮相同）</translation></message>
+    <message><source>Start Dictation</source><translation>开始听写</translation></message>
+    <message><source>Stop Dictation</source><translation>停止听写</translation></message>
+    <message><source>Start dictation</source><translation>开始听写</translation></message>
+    <message><source>Stop dictation</source><translation>停止听写</translation></message>
+    <message><source>Pause Injecting</source><translation>暂停输入</translation></message>
+    <message><source>Resume Injecting</source><translation>继续输入</translation></message>
+    <message><source>Undo Last Injection</source><translation>撤销上次输入</translation></message>
+    <message><source>Settings…</source><translation>设置…</translation></message>
+    <message><source>Settings</source><translation>设置</translation></message>
+    <message><source>Ready to dictate</source><translation>准备听写</translation></message>
+    <message><source>Starting speech recognition…</source><translation>正在启动语音识别…</translation></message>
+    <message><source>Loading speech model…</source><translation>正在加载语音模型…</translation></message>
+    <message><source>Downloading speech model…</source><translation>正在下载语音模型…</translation></message>
+    <message><source>Downloading speech recognition model…</source><translation>正在下载语音识别模型…</translation></message>
+    <message><source>No speech model</source><translation>无语音模型</translation></message>
+    <message><source>Transcribing…</source><translation>正在转写…</translation></message>
+    <message><source>Injecting…</source><translation>正在输入…</translation></message>
+    <message><source>Listening</source><translation>正在聆听</translation></message>
+    <message><source>Paused (engine warm)</source><translation>已暂停（引擎就绪）</translation></message>
+    <message><source>TrackType — %1</source><translation>TrackType — %1</translation></message>
 </context>
 <context>
     <name>SettingsDialog</name>
@@ -94,5 +114,32 @@
     <message><source>No on-screen keyboard was found.
 Please install 'onboard' or 'florence'.</source><translation>未找到屏幕键盘。
 请安装 'onboard' 或 'florence'。</translation></message>
+    <message><source>Voice commands</source><translation>语音命令</translation></message>
+    <message><source>Spoken phrase</source><translation>语音短语</translation></message>
+    <message><source>Output</source><translation>输出</translation></message>
+    <message><source>Add</source><translation>添加</translation></message>
+    <message><source>Remove</source><translation>移除</translation></message>
+    <message><source>Lock to screen edge:</source><translation>锁定到屏幕边缘：</translation></message>
+    <message><source>None</source><translation>无</translation></message>
+    <message><source>Left edge</source><translation>左边缘</translation></message>
+    <message><source>Right edge</source><translation>右边缘</translation></message>
+    <message><source>Slide off screen when idle</source><translation>空闲时滑出屏幕</translation></message>
+    <message><source>Audio feedback</source><translation>声音反馈</translation></message>
+    <message><source>Microphone:</source><translation>麦克风：</translation></message>
+    <message><source>System default</source><translation>系统默认</translation></message>
+    <message><source>%1 (default)</source><translation>%1（默认）</translation></message>
+    <message><source>Speech model:</source><translation>语音模型：</translation></message>
+    <message><source>Speech language:</source><translation>语音语言：</translation></message>
+    <message><source>Auto-detect</source><translation>自动检测</translation></message>
+    <message><source>Type text by:</source><translation>文本输入方式：</translation></message>
+    <message><source>Simulated keystrokes</source><translation>模拟按键</translation></message>
+    <message><source>Clipboard paste</source><translation>剪贴板粘贴</translation></message>
+    <message><source>Type partial results live</source><translation>实时输入临时结果</translation></message>
+    <message><source>Auto spacing &amp;&amp; capitalization</source><translation>自动空格和大写</translation></message>
+    <message><source>Dictation hotkey:</source><translation>听写热键：</translation></message>
+    <message><source>Hold to talk (push-to-talk)</source><translation>按住说话（一键通）</translation></message>
+    <message><source>Reset to Defaults</source><translation>恢复默认</translation></message>
+    <message><source>On-Screen Keyboard</source><translation>屏幕键盘</translation></message>
+    <message><source>Installing on-screen keyboard…</source><translation>正在安装屏幕键盘…</translation></message>
 </context>
 </TS>

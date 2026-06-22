@@ -13,7 +13,7 @@
 #endif
 #include <QTranslator>
 #include "textinjector.h"
-#include "textnormalizer.h"
+#include "transcriptprocessor.h"
 #include "settingsdialog.h"
 
 class AudioCapture;
@@ -123,7 +123,7 @@ private:
     WhisperSttEngine* m_stt        = nullptr;
     GlobalHotkey*     m_hotkey     = nullptr;
     TranscriptPreview* m_preview   = nullptr;
-    TextNormalizer    m_normalizer;          // spacing/capitalization of segments
+    TranscriptProcessor m_processor;         // recognition → text-to-inject seam
     int               m_pendingPartialLen = 0; // chars of the live partial on screen
     int               m_lastInjectedLen   = 0; // chars of the last committed final
     bool              m_paused            = false;

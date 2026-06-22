@@ -49,6 +49,25 @@
     <message><source>Dwell Active</source><translation>ড্ওয়েল সক্রিয়</translation></message>
     <message><source>Enable dwell-clicking (same as the Auto button)</source><translation>ড্ওয়েল-ক্লিকিং সক্ষম করুন (Auto বোতামের মতো)</translation></message>
     <message><source>Close application</source><translation>অ্যাপ্লিকেশন বন্ধ করুন</translation></message>
+    <message><source>Start Dictation</source><translation>শ্রুতিলিখন শুরু করুন</translation></message>
+    <message><source>Stop Dictation</source><translation>শ্রুতিলিখন বন্ধ করুন</translation></message>
+    <message><source>Start dictation</source><translation>শ্রুতিলিখন শুরু করুন</translation></message>
+    <message><source>Stop dictation</source><translation>শ্রুতিলিখন বন্ধ করুন</translation></message>
+    <message><source>Pause Injecting</source><translation>ইনপুট থামান</translation></message>
+    <message><source>Resume Injecting</source><translation>ইনপুট পুনরায় শুরু করুন</translation></message>
+    <message><source>Undo Last Injection</source><translation>শেষ ইনপুট পূর্বাবস্থায় ফেরান</translation></message>
+    <message><source>Settings…</source><translation>সেটিংস…</translation></message>
+    <message><source>Ready to dictate</source><translation>শ্রুতিলিখনের জন্য প্রস্তুত</translation></message>
+    <message><source>Starting speech recognition…</source><translation>ভয়েস শনাক্তকরণ শুরু হচ্ছে…</translation></message>
+    <message><source>Loading speech model…</source><translation>ভয়েস মডেল লোড হচ্ছে…</translation></message>
+    <message><source>Downloading speech model…</source><translation>ভয়েস মডেল ডাউনলোড হচ্ছে…</translation></message>
+    <message><source>Downloading speech recognition model…</source><translation>ভয়েস শনাক্তকরণ মডেল ডাউনলোড হচ্ছে…</translation></message>
+    <message><source>No speech model</source><translation>কোনো ভয়েস মডেল নেই</translation></message>
+    <message><source>Transcribing…</source><translation>প্রতিলিপি করা হচ্ছে…</translation></message>
+    <message><source>Injecting…</source><translation>ইনপুট করা হচ্ছে…</translation></message>
+    <message><source>Listening</source><translation>শোনা হচ্ছে</translation></message>
+    <message><source>Paused (engine warm)</source><translation>বিরতি (ইঞ্জিন প্রস্তুত)</translation></message>
+    <message><source>TrackType — %1</source><translation>TrackType — %1</translation></message>
 </context>
 <context>
     <name>SettingsDialog</name>
@@ -106,5 +125,26 @@
     <message><source>No on-screen keyboard was found.
 Please install 'onboard' or 'florence'.</source><translation>কোনো অন-স্ক্রিন কীবোর্ড পাওয়া যায়নি।
 'onboard' বা 'florence' ইনস্টল করুন।</translation></message>
+    <message><source>Voice commands</source><translation>ভয়েস কমান্ড</translation></message>
+    <message><source>Spoken phrase</source><translation>উচ্চারিত বাক্যাংশ</translation></message>
+    <message><source>Output</source><translation>আউটপুট</translation></message>
+    <message><source>Add</source><translation>যোগ করুন</translation></message>
+    <message><source>Remove</source><translation>সরান</translation></message>
+    <message><source>Audio feedback</source><translation>অডিও প্রতিক্রিয়া</translation></message>
+    <message><source>Microphone:</source><translation>মাইক্রোফোন:</translation></message>
+    <message><source>System default</source><translation>সিস্টেম ডিফল্ট</translation></message>
+    <message><source>%1 (default)</source><translation>%1 (ডিফল্ট)</translation></message>
+    <message><source>Speech model:</source><translation>ভয়েস মডেল:</translation></message>
+    <message><source>Speech language:</source><translation>ভয়েসের ভাষা:</translation></message>
+    <message><source>Auto-detect</source><translation>স্বয়ংক্রিয় শনাক্তকরণ</translation></message>
+    <message><source>Type text by:</source><translation>টেক্সট ইনপুটের পদ্ধতি:</translation></message>
+    <message><source>Simulated keystrokes</source><translation>অনুকরণ করা কীস্ট্রোক</translation></message>
+    <message><source>Clipboard paste</source><translation>ক্লিপবোর্ড পেস্ট</translation></message>
+    <message><source>Type partial results live</source><translation>আংশিক ফলাফল লাইভ টাইপ করুন</translation></message>
+    <message><source>Auto spacing &amp;&amp; capitalization</source><translation>স্বয়ংক্রিয় ফাঁক ও বড় হাতের অক্ষর</translation></message>
+    <message><source>Dictation hotkey:</source><translation>শ্রুতিলিখন হটকি:</translation></message>
+    <message><source>Hold to talk (push-to-talk)</source><translation>কথা বলতে চেপে ধরুন (পুশ-টু-টক)</translation></message>
+    <message><source>On-Screen Keyboard</source><translation>অন-স্ক্রিন কীবোর্ড</translation></message>
+    <message><source>Installing on-screen keyboard…</source><translation>অন-স্ক্রিন কীবোর্ড ইনস্টল হচ্ছে…</translation></message>
 </context>
 </TS>

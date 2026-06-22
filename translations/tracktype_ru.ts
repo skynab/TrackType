@@ -49,6 +49,25 @@
     <message><source>Dwell Active</source><translation>Задержка активна</translation></message>
     <message><source>Enable dwell-clicking (same as the Auto button)</source><translation>Включить нажатие с задержкой (то же что кнопка Auto)</translation></message>
     <message><source>Close application</source><translation>Закрыть приложение</translation></message>
+    <message><source>Start Dictation</source><translation>Начать диктовку</translation></message>
+    <message><source>Stop Dictation</source><translation>Остановить диктовку</translation></message>
+    <message><source>Start dictation</source><translation>Начать диктовку</translation></message>
+    <message><source>Stop dictation</source><translation>Остановить диктовку</translation></message>
+    <message><source>Pause Injecting</source><translation>Приостановить ввод</translation></message>
+    <message><source>Resume Injecting</source><translation>Возобновить ввод</translation></message>
+    <message><source>Undo Last Injection</source><translation>Отменить последний ввод</translation></message>
+    <message><source>Settings…</source><translation>Настройки…</translation></message>
+    <message><source>Ready to dictate</source><translation>Готово к диктовке</translation></message>
+    <message><source>Starting speech recognition…</source><translation>Запуск распознавания речи…</translation></message>
+    <message><source>Loading speech model…</source><translation>Загрузка речевой модели…</translation></message>
+    <message><source>Downloading speech model…</source><translation>Скачивание речевой модели…</translation></message>
+    <message><source>Downloading speech recognition model…</source><translation>Скачивание модели распознавания речи…</translation></message>
+    <message><source>No speech model</source><translation>Нет речевой модели</translation></message>
+    <message><source>Transcribing…</source><translation>Расшифровка…</translation></message>
+    <message><source>Injecting…</source><translation>Ввод…</translation></message>
+    <message><source>Listening</source><translation>Прослушивание</translation></message>
+    <message><source>Paused (engine warm)</source><translation>Пауза (движок готов)</translation></message>
+    <message><source>TrackType — %1</source><translation>TrackType — %1</translation></message>
 </context>
 <context>
     <name>SettingsDialog</name>
@@ -106,5 +125,26 @@
     <message><source>No on-screen keyboard was found.
 Please install 'onboard' or 'florence'.</source><translation>Экранная клавиатура не найдена.
 Установите 'onboard' или 'florence'.</translation></message>
+    <message><source>Voice commands</source><translation>Голосовые команды</translation></message>
+    <message><source>Spoken phrase</source><translation>Произносимая фраза</translation></message>
+    <message><source>Output</source><translation>Вывод</translation></message>
+    <message><source>Add</source><translation>Добавить</translation></message>
+    <message><source>Remove</source><translation>Удалить</translation></message>
+    <message><source>Audio feedback</source><translation>Звуковой отклик</translation></message>
+    <message><source>Microphone:</source><translation>Микрофон:</translation></message>
+    <message><source>System default</source><translation>Системный по умолчанию</translation></message>
+    <message><source>%1 (default)</source><translation>%1 (по умолчанию)</translation></message>
+    <message><source>Speech model:</source><translation>Речевая модель:</translation></message>
+    <message><source>Speech language:</source><translation>Язык речи:</translation></message>
+    <message><source>Auto-detect</source><translation>Автоопределение</translation></message>
+    <message><source>Type text by:</source><translation>Вводить текст:</translation></message>
+    <message><source>Simulated keystrokes</source><translation>Имитация нажатий клавиш</translation></message>
+    <message><source>Clipboard paste</source><translation>Вставка из буфера обмена</translation></message>
+    <message><source>Type partial results live</source><translation>Вводить промежуточные результаты вживую</translation></message>
+    <message><source>Auto spacing &amp;&amp; capitalization</source><translation>Авто. пробелы и заглавные буквы</translation></message>
+    <message><source>Dictation hotkey:</source><translation>Горячая клавиша диктовки:</translation></message>
+    <message><source>Hold to talk (push-to-talk)</source><translation>Удерживать для речи (push-to-talk)</translation></message>
+    <message><source>On-Screen Keyboard</source><translation>Экранная клавиатура</translation></message>
+    <message><source>Installing on-screen keyboard…</source><translation>Установка экранной клавиатуры…</translation></message>
 </context>
 </TS>

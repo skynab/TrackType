@@ -44,6 +44,26 @@
     <message><source>No action</source><translation>何もしない</translation></message>
     <message><source>Dwell Active</source><translation>ドウェル有効</translation></message>
     <message><source>Enable dwell-clicking (same as the Auto button)</source><translation>滞留クリックを有効にする（Autoボタンと同じ）</translation></message>
+    <message><source>Start Dictation</source><translation>ディクテーション開始</translation></message>
+    <message><source>Stop Dictation</source><translation>ディクテーション停止</translation></message>
+    <message><source>Start dictation</source><translation>ディクテーション開始</translation></message>
+    <message><source>Stop dictation</source><translation>ディクテーション停止</translation></message>
+    <message><source>Pause Injecting</source><translation>入力を一時停止</translation></message>
+    <message><source>Resume Injecting</source><translation>入力を再開</translation></message>
+    <message><source>Undo Last Injection</source><translation>直前の入力を取り消す</translation></message>
+    <message><source>Settings…</source><translation>設定…</translation></message>
+    <message><source>Settings</source><translation>設定</translation></message>
+    <message><source>Ready to dictate</source><translation>ディクテーション準備完了</translation></message>
+    <message><source>Starting speech recognition…</source><translation>音声認識を開始しています…</translation></message>
+    <message><source>Loading speech model…</source><translation>音声モデルを読み込んでいます…</translation></message>
+    <message><source>Downloading speech model…</source><translation>音声モデルをダウンロードしています…</translation></message>
+    <message><source>Downloading speech recognition model…</source><translation>音声認識モデルをダウンロードしています…</translation></message>
+    <message><source>No speech model</source><translation>音声モデルなし</translation></message>
+    <message><source>Transcribing…</source><translation>文字起こし中…</translation></message>
+    <message><source>Injecting…</source><translation>入力中…</translation></message>
+    <message><source>Listening</source><translation>聞き取り中</translation></message>
+    <message><source>Paused (engine warm)</source><translation>一時停止中（エンジン待機）</translation></message>
+    <message><source>TrackType — %1</source><translation>TrackType — %1</translation></message>
 </context>
 <context>
     <name>SettingsDialog</name>
@@ -94,5 +114,32 @@
     <message><source>No on-screen keyboard was found.
 Please install 'onboard' or 'florence'.</source><translation>スクリーンキーボードが見つかりませんでした。
 'onboard' または 'florence' をインストールしてください。</translation></message>
+    <message><source>Voice commands</source><translation>音声コマンド</translation></message>
+    <message><source>Spoken phrase</source><translation>発話フレーズ</translation></message>
+    <message><source>Output</source><translation>出力</translation></message>
+    <message><source>Add</source><translation>追加</translation></message>
+    <message><source>Remove</source><translation>削除</translation></message>
+    <message><source>Lock to screen edge:</source><translation>画面端に固定：</translation></message>
+    <message><source>None</source><translation>なし</translation></message>
+    <message><source>Left edge</source><translation>左端</translation></message>
+    <message><source>Right edge</source><translation>右端</translation></message>
+    <message><source>Slide off screen when idle</source><translation>待機時に画面外へスライド</translation></message>
+    <message><source>Audio feedback</source><translation>音声フィードバック</translation></message>
+    <message><source>Microphone:</source><translation>マイク：</translation></message>
+    <message><source>System default</source><translation>システム既定</translation></message>
+    <message><source>%1 (default)</source><translation>%1（既定）</translation></message>
+    <message><source>Speech model:</source><translation>音声モデル：</translation></message>
+    <message><source>Speech language:</source><translation>音声の言語：</translation></message>
+    <message><source>Auto-detect</source><translation>自動検出</translation></message>
+    <message><source>Type text by:</source><translation>テキスト入力方法：</translation></message>
+    <message><source>Simulated keystrokes</source><translation>擬似キー入力</translation></message>
+    <message><source>Clipboard paste</source><translation>クリップボード貼り付け</translation></message>
+    <message><source>Type partial results live</source><translation>途中結果をリアルタイム入力</translation></message>
+    <message><source>Auto spacing &amp;&amp; capitalization</source><translation>自動スペースと大文字化</translation></message>
+    <message><source>Dictation hotkey:</source><translation>ディクテーションのホットキー：</translation></message>
+    <message><source>Hold to talk (push-to-talk)</source><translation>押している間だけ話す（プッシュトゥトーク）</translation></message>
+    <message><source>Reset to Defaults</source><translation>既定値に戻す</translation></message>
+    <message><source>On-Screen Keyboard</source><translation>スクリーンキーボード</translation></message>
+    <message><source>Installing on-screen keyboard…</source><translation>スクリーンキーボードをインストールしています…</translation></message>
 </context>
 </TS>

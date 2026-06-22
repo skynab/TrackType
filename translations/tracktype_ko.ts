@@ -44,6 +44,26 @@
     <message><source>No action</source><translation>동작 없음</translation></message>
     <message><source>Dwell Active</source><translation>머물기 활성</translation></message>
     <message><source>Enable dwell-clicking (same as the Auto button)</source><translation>머물기 클릭 활성화 (자동 버튼과 동일)</translation></message>
+    <message><source>Start Dictation</source><translation>받아쓰기 시작</translation></message>
+    <message><source>Stop Dictation</source><translation>받아쓰기 중지</translation></message>
+    <message><source>Start dictation</source><translation>받아쓰기 시작</translation></message>
+    <message><source>Stop dictation</source><translation>받아쓰기 중지</translation></message>
+    <message><source>Pause Injecting</source><translation>입력 일시중지</translation></message>
+    <message><source>Resume Injecting</source><translation>입력 재개</translation></message>
+    <message><source>Undo Last Injection</source><translation>마지막 입력 취소</translation></message>
+    <message><source>Settings…</source><translation>설정…</translation></message>
+    <message><source>Settings</source><translation>설정</translation></message>
+    <message><source>Ready to dictate</source><translation>받아쓰기 준비됨</translation></message>
+    <message><source>Starting speech recognition…</source><translation>음성 인식 시작 중…</translation></message>
+    <message><source>Loading speech model…</source><translation>음성 모델 로드 중…</translation></message>
+    <message><source>Downloading speech model…</source><translation>음성 모델 다운로드 중…</translation></message>
+    <message><source>Downloading speech recognition model…</source><translation>음성 인식 모델 다운로드 중…</translation></message>
+    <message><source>No speech model</source><translation>음성 모델 없음</translation></message>
+    <message><source>Transcribing…</source><translation>변환 중…</translation></message>
+    <message><source>Injecting…</source><translation>입력 중…</translation></message>
+    <message><source>Listening</source><translation>듣는 중</translation></message>
+    <message><source>Paused (engine warm)</source><translation>일시중지됨 (엔진 준비됨)</translation></message>
+    <message><source>TrackType — %1</source><translation>TrackType — %1</translation></message>
 </context>
 <context>
     <name>SettingsDialog</name>
@@ -94,5 +114,32 @@
     <message><source>No on-screen keyboard was found.
 Please install 'onboard' or 'florence'.</source><translation>화상 키보드를 찾을 수 없습니다.
 'onboard' 또는 'florence'를 설치해 주세요.</translation></message>
+    <message><source>Voice commands</source><translation>음성 명령</translation></message>
+    <message><source>Spoken phrase</source><translation>음성 문구</translation></message>
+    <message><source>Output</source><translation>출력</translation></message>
+    <message><source>Add</source><translation>추가</translation></message>
+    <message><source>Remove</source><translation>제거</translation></message>
+    <message><source>Lock to screen edge:</source><translation>화면 가장자리에 고정:</translation></message>
+    <message><source>None</source><translation>없음</translation></message>
+    <message><source>Left edge</source><translation>왼쪽 가장자리</translation></message>
+    <message><source>Right edge</source><translation>오른쪽 가장자리</translation></message>
+    <message><source>Slide off screen when idle</source><translation>유휴 시 화면 밖으로 밀어내기</translation></message>
+    <message><source>Audio feedback</source><translation>오디오 피드백</translation></message>
+    <message><source>Microphone:</source><translation>마이크:</translation></message>
+    <message><source>System default</source><translation>시스템 기본값</translation></message>
+    <message><source>%1 (default)</source><translation>%1 (기본값)</translation></message>
+    <message><source>Speech model:</source><translation>음성 모델:</translation></message>
+    <message><source>Speech language:</source><translation>음성 언어:</translation></message>
+    <message><source>Auto-detect</source><translation>자동 감지</translation></message>
+    <message><source>Type text by:</source><translation>텍스트 입력 방식:</translation></message>
+    <message><source>Simulated keystrokes</source><translation>가상 키 입력</translation></message>
+    <message><source>Clipboard paste</source><translation>클립보드 붙여넣기</translation></message>
+    <message><source>Type partial results live</source><translation>부분 결과 실시간 입력</translation></message>
+    <message><source>Auto spacing &amp;&amp; capitalization</source><translation>자동 띄어쓰기 및 대문자화</translation></message>
+    <message><source>Dictation hotkey:</source><translation>받아쓰기 단축키:</translation></message>
+    <message><source>Hold to talk (push-to-talk)</source><translation>눌러서 말하기 (푸시 투 토크)</translation></message>
+    <message><source>Reset to Defaults</source><translation>기본값으로 재설정</translation></message>
+    <message><source>On-Screen Keyboard</source><translation>화상 키보드</translation></message>
+    <message><source>Installing on-screen keyboard…</source><translation>화상 키보드 설치 중…</translation></message>
 </context>
 </TS>

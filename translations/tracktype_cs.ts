@@ -46,6 +46,25 @@
     <message><source>No action</source><translation>Žádná akce</translation></message>
     <message><source>Dwell Active</source><translation>Najetí aktivní</translation></message>
     <message><source>Enable dwell-clicking (same as the Auto button)</source><translation>Povolit klikání při najetí (stejné jako tlačítko Auto)</translation></message>
+    <message><source>Start Dictation</source><translation>Spustit diktování</translation></message>
+    <message><source>Stop Dictation</source><translation>Zastavit diktování</translation></message>
+    <message><source>Start dictation</source><translation>Spustit diktování</translation></message>
+    <message><source>Stop dictation</source><translation>Zastavit diktování</translation></message>
+    <message><source>Pause Injecting</source><translation>Pozastavit vkládání</translation></message>
+    <message><source>Resume Injecting</source><translation>Obnovit vkládání</translation></message>
+    <message><source>Undo Last Injection</source><translation>Vrátit poslední vložení</translation></message>
+    <message><source>Settings…</source><translation>Nastavení…</translation></message>
+    <message><source>Ready to dictate</source><translation>Připraveno k diktování</translation></message>
+    <message><source>Starting speech recognition…</source><translation>Spouštění rozpoznávání řeči…</translation></message>
+    <message><source>Loading speech model…</source><translation>Načítání modelu řeči…</translation></message>
+    <message><source>Downloading speech model…</source><translation>Stahování modelu řeči…</translation></message>
+    <message><source>Downloading speech recognition model…</source><translation>Stahování modelu rozpoznávání řeči…</translation></message>
+    <message><source>No speech model</source><translation>Žádný model řeči</translation></message>
+    <message><source>Transcribing…</source><translation>Přepisování…</translation></message>
+    <message><source>Injecting…</source><translation>Vkládání…</translation></message>
+    <message><source>Listening</source><translation>Poslouchání</translation></message>
+    <message><source>Paused (engine warm)</source><translation>Pozastaveno (jádro připraveno)</translation></message>
+    <message><source>TrackType — %1</source><translation>TrackType — %1</translation></message>
 </context>
 <context>
     <name>SettingsDialog</name>
@@ -96,5 +115,32 @@
     <message><source>No on-screen keyboard was found.
 Please install 'onboard' or 'florence'.</source><translation>Klávesnice na obrazovce nebyla nalezena.
 Nainstalujte prosím 'onboard' nebo 'florence'.</translation></message>
+    <message><source>Voice commands</source><translation>Hlasové příkazy</translation></message>
+    <message><source>Spoken phrase</source><translation>Vyslovená fráze</translation></message>
+    <message><source>Output</source><translation>Výstup</translation></message>
+    <message><source>Add</source><translation>Přidat</translation></message>
+    <message><source>Remove</source><translation>Odebrat</translation></message>
+    <message><source>Lock to screen edge:</source><translation>Ukotvit k okraji obrazovky:</translation></message>
+    <message><source>None</source><translation>Žádný</translation></message>
+    <message><source>Left edge</source><translation>Levý okraj</translation></message>
+    <message><source>Right edge</source><translation>Pravý okraj</translation></message>
+    <message><source>Slide off screen when idle</source><translation>Skrýt mimo obrazovku při nečinnosti</translation></message>
+    <message><source>Audio feedback</source><translation>Zvuková odezva</translation></message>
+    <message><source>Microphone:</source><translation>Mikrofon:</translation></message>
+    <message><source>System default</source><translation>Výchozí systému</translation></message>
+    <message><source>%1 (default)</source><translation>%1 (výchozí)</translation></message>
+    <message><source>Speech model:</source><translation>Model řeči:</translation></message>
+    <message><source>Speech language:</source><translation>Jazyk řeči:</translation></message>
+    <message><source>Auto-detect</source><translation>Automatická detekce</translation></message>
+    <message><source>Type text by:</source><translation>Psát text pomocí:</translation></message>
+    <message><source>Simulated keystrokes</source><translation>Simulované stisky kláves</translation></message>
+    <message><source>Clipboard paste</source><translation>Vložení ze schránky</translation></message>
+    <message><source>Type partial results live</source><translation>Psát průběžné výsledky živě</translation></message>
+    <message><source>Auto spacing &amp;&amp; capitalization</source><translation>Automatické mezery a velká písmena</translation></message>
+    <message><source>Dictation hotkey:</source><translation>Klávesová zkratka diktování:</translation></message>
+    <message><source>Hold to talk (push-to-talk)</source><translation>Podržením mluvit (push-to-talk)</translation></message>
+    <message><source>Reset to Defaults</source><translation>Obnovit výchozí</translation></message>
+    <message><source>On-Screen Keyboard</source><translation>Klávesnice na obrazovce</translation></message>
+    <message><source>Installing on-screen keyboard…</source><translation>Instalace klávesnice na obrazovce…</translation></message>
 </context>
 </TS>

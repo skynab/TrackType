@@ -49,6 +49,25 @@
     <message><source>Dwell Active</source><translation>ڈویل فعال</translation></message>
     <message><source>Enable dwell-clicking (same as the Auto button)</source><translation>ڈویل-کلکنگ فعال کریں (Auto بٹن کی طرح)</translation></message>
     <message><source>Close application</source><translation>ایپلیکیشن بند کریں</translation></message>
+    <message><source>Start Dictation</source><translation>املا شروع کریں</translation></message>
+    <message><source>Stop Dictation</source><translation>املا روکیں</translation></message>
+    <message><source>Start dictation</source><translation>املا شروع کریں</translation></message>
+    <message><source>Stop dictation</source><translation>املا روکیں</translation></message>
+    <message><source>Pause Injecting</source><translation>اِندراج روکیں</translation></message>
+    <message><source>Resume Injecting</source><translation>اِندراج دوبارہ شروع کریں</translation></message>
+    <message><source>Undo Last Injection</source><translation>آخری اِندراج کالعدم کریں</translation></message>
+    <message><source>Settings…</source><translation>ترتیبات…</translation></message>
+    <message><source>Ready to dictate</source><translation>املا کے لیے تیار</translation></message>
+    <message><source>Starting speech recognition…</source><translation>تقریر کی شناخت شروع ہو رہی ہے…</translation></message>
+    <message><source>Loading speech model…</source><translation>تقریری ماڈل لوڈ ہو رہا ہے…</translation></message>
+    <message><source>Downloading speech model…</source><translation>تقریری ماڈل ڈاؤن لوڈ ہو رہا ہے…</translation></message>
+    <message><source>Downloading speech recognition model…</source><translation>تقریر شناخت ماڈل ڈاؤن لوڈ ہو رہا ہے…</translation></message>
+    <message><source>No speech model</source><translation>کوئی تقریری ماڈل نہیں</translation></message>
+    <message><source>Transcribing…</source><translation>نقل کیا جا رہا ہے…</translation></message>
+    <message><source>Injecting…</source><translation>اِندراج ہو رہا ہے…</translation></message>
+    <message><source>Listening</source><translation>سن رہا ہے</translation></message>
+    <message><source>Paused (engine warm)</source><translation>رکا ہوا (انجن تیار)</translation></message>
+    <message><source>TrackType — %1</source><translation>TrackType — %1</translation></message>
 </context>
 <context>
     <name>SettingsDialog</name>
@@ -106,5 +125,26 @@
     <message><source>No on-screen keyboard was found.
 Please install 'onboard' or 'florence'.</source><translation>کوئی آن-اسکرین کی بورڈ نہیں ملا۔
 براہ کرم 'onboard' یا 'florence' انسٹال کریں۔</translation></message>
+    <message><source>Voice commands</source><translation>صوتی کمانڈز</translation></message>
+    <message><source>Spoken phrase</source><translation>بولا گیا جملہ</translation></message>
+    <message><source>Output</source><translation>آؤٹ پٹ</translation></message>
+    <message><source>Add</source><translation>شامل کریں</translation></message>
+    <message><source>Remove</source><translation>ہٹائیں</translation></message>
+    <message><source>Audio feedback</source><translation>آڈیو فیڈ بیک</translation></message>
+    <message><source>Microphone:</source><translation>مائیکروفون:</translation></message>
+    <message><source>System default</source><translation>سسٹم طے شدہ</translation></message>
+    <message><source>%1 (default)</source><translation>%1 (طے شدہ)</translation></message>
+    <message><source>Speech model:</source><translation>تقریری ماڈل:</translation></message>
+    <message><source>Speech language:</source><translation>تقریر کی زبان:</translation></message>
+    <message><source>Auto-detect</source><translation>خودکار شناخت</translation></message>
+    <message><source>Type text by:</source><translation>متن لکھنے کا طریقہ:</translation></message>
+    <message><source>Simulated keystrokes</source><translation>مصنوعی کی اسٹروکس</translation></message>
+    <message><source>Clipboard paste</source><translation>کلپ بورڈ سے پیسٹ</translation></message>
+    <message><source>Type partial results live</source><translation>جزوی نتائج براہِ راست لکھیں</translation></message>
+    <message><source>Auto spacing &amp;&amp; capitalization</source><translation>خودکار وقفہ اور بڑے حروف</translation></message>
+    <message><source>Dictation hotkey:</source><translation>املا کی ہاٹ کی:</translation></message>
+    <message><source>Hold to talk (push-to-talk)</source><translation>بولنے کے لیے دبائے رکھیں (پش-ٹو-ٹاک)</translation></message>
+    <message><source>On-Screen Keyboard</source><translation>آن اسکرین کی بورڈ</translation></message>
+    <message><source>Installing on-screen keyboard…</source><translation>آن اسکرین کی بورڈ انسٹال ہو رہا ہے…</translation></message>
 </context>
 </TS>

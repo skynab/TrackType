@@ -49,6 +49,25 @@
     <message><source>Dwell Active</source><translation>التحوم نشط</translation></message>
     <message><source>Enable dwell-clicking (same as the Auto button)</source><translation>تمكين النقر بالتحوم (مثل زر Auto)</translation></message>
     <message><source>Close application</source><translation>إغلاق التطبيق</translation></message>
+    <message><source>Start Dictation</source><translation>بدء الإملاء</translation></message>
+    <message><source>Stop Dictation</source><translation>إيقاف الإملاء</translation></message>
+    <message><source>Start dictation</source><translation>بدء الإملاء</translation></message>
+    <message><source>Stop dictation</source><translation>إيقاف الإملاء</translation></message>
+    <message><source>Pause Injecting</source><translation>إيقاف الإدخال مؤقتًا</translation></message>
+    <message><source>Resume Injecting</source><translation>استئناف الإدخال</translation></message>
+    <message><source>Undo Last Injection</source><translation>التراجع عن آخر إدخال</translation></message>
+    <message><source>Settings…</source><translation>الإعدادات…</translation></message>
+    <message><source>Ready to dictate</source><translation>جاهز للإملاء</translation></message>
+    <message><source>Starting speech recognition…</source><translation>جارٍ بدء التعرف على الكلام…</translation></message>
+    <message><source>Loading speech model…</source><translation>جارٍ تحميل نموذج الكلام…</translation></message>
+    <message><source>Downloading speech model…</source><translation>جارٍ تنزيل نموذج الكلام…</translation></message>
+    <message><source>Downloading speech recognition model…</source><translation>جارٍ تنزيل نموذج التعرف على الكلام…</translation></message>
+    <message><source>No speech model</source><translation>لا يوجد نموذج كلام</translation></message>
+    <message><source>Transcribing…</source><translation>جارٍ النسخ…</translation></message>
+    <message><source>Injecting…</source><translation>جارٍ الإدخال…</translation></message>
+    <message><source>Listening</source><translation>جارٍ الاستماع</translation></message>
+    <message><source>Paused (engine warm)</source><translation>متوقف مؤقتًا (المحرك جاهز)</translation></message>
+    <message><source>TrackType — %1</source><translation>TrackType — %1</translation></message>
 </context>
 <context>
     <name>SettingsDialog</name>
@@ -106,5 +125,26 @@
     <message><source>No on-screen keyboard was found.
 Please install 'onboard' or 'florence'.</source><translation>لم يتم العثور على لوحة مفاتيح على الشاشة.
 يرجى تثبيت 'onboard' أو 'florence'.</translation></message>
+    <message><source>Voice commands</source><translation>الأوامر الصوتية</translation></message>
+    <message><source>Spoken phrase</source><translation>العبارة المنطوقة</translation></message>
+    <message><source>Output</source><translation>الناتج</translation></message>
+    <message><source>Add</source><translation>إضافة</translation></message>
+    <message><source>Remove</source><translation>إزالة</translation></message>
+    <message><source>Audio feedback</source><translation>تنبيه صوتي</translation></message>
+    <message><source>Microphone:</source><translation>الميكروفون:</translation></message>
+    <message><source>System default</source><translation>الافتراضي للنظام</translation></message>
+    <message><source>%1 (default)</source><translation>%1 (افتراضي)</translation></message>
+    <message><source>Speech model:</source><translation>نموذج الكلام:</translation></message>
+    <message><source>Speech language:</source><translation>لغة الكلام:</translation></message>
+    <message><source>Auto-detect</source><translation>كشف تلقائي</translation></message>
+    <message><source>Type text by:</source><translation>كتابة النص عبر:</translation></message>
+    <message><source>Simulated keystrokes</source><translation>ضغطات مفاتيح محاكاة</translation></message>
+    <message><source>Clipboard paste</source><translation>اللصق من الحافظة</translation></message>
+    <message><source>Type partial results live</source><translation>كتابة النتائج الجزئية مباشرة</translation></message>
+    <message><source>Auto spacing &amp;&amp; capitalization</source><translation>المسافات والأحرف الكبيرة تلقائيًا</translation></message>
+    <message><source>Dictation hotkey:</source><translation>مفتاح اختصار الإملاء:</translation></message>
+    <message><source>Hold to talk (push-to-talk)</source><translation>اضغط مع الاستمرار للتحدث (الضغط للتحدث)</translation></message>
+    <message><source>On-Screen Keyboard</source><translation>لوحة المفاتيح على الشاشة</translation></message>
+    <message><source>Installing on-screen keyboard…</source><translation>جارٍ تثبيت لوحة المفاتيح على الشاشة…</translation></message>
 </context>
 </TS>

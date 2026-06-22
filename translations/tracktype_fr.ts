@@ -44,6 +44,26 @@
     <message><source>No action</source><translation>Aucune action</translation></message>
     <message><source>Dwell Active</source><translation>Survol actif</translation></message>
     <message><source>Enable dwell-clicking (same as the Auto button)</source><translation>Activer le clic par survol (même que le bouton Auto)</translation></message>
+    <message><source>Start Dictation</source><translation>Démarrer la dictée</translation></message>
+    <message><source>Stop Dictation</source><translation>Arrêter la dictée</translation></message>
+    <message><source>Start dictation</source><translation>Démarrer la dictée</translation></message>
+    <message><source>Stop dictation</source><translation>Arrêter la dictée</translation></message>
+    <message><source>Pause Injecting</source><translation>Suspendre l'insertion</translation></message>
+    <message><source>Resume Injecting</source><translation>Reprendre l'insertion</translation></message>
+    <message><source>Undo Last Injection</source><translation>Annuler la dernière insertion</translation></message>
+    <message><source>Settings…</source><translation>Paramètres…</translation></message>
+    <message><source>Settings</source><translation>Paramètres</translation></message>
+    <message><source>Ready to dictate</source><translation>Prêt à dicter</translation></message>
+    <message><source>Starting speech recognition…</source><translation>Démarrage de la reconnaissance vocale…</translation></message>
+    <message><source>Loading speech model…</source><translation>Chargement du modèle vocal…</translation></message>
+    <message><source>Downloading speech model…</source><translation>Téléchargement du modèle vocal…</translation></message>
+    <message><source>Downloading speech recognition model…</source><translation>Téléchargement du modèle de reconnaissance vocale…</translation></message>
+    <message><source>No speech model</source><translation>Aucun modèle vocal</translation></message>
+    <message><source>Transcribing…</source><translation>Transcription…</translation></message>
+    <message><source>Injecting…</source><translation>Insertion…</translation></message>
+    <message><source>Listening</source><translation>Écoute</translation></message>
+    <message><source>Paused (engine warm)</source><translation>En pause (moteur prêt)</translation></message>
+    <message><source>TrackType — %1</source><translation>TrackType — %1</translation></message>
 </context>
 <context>
     <name>SettingsDialog</name>
@@ -94,5 +114,32 @@
     <message><source>No on-screen keyboard was found.
 Please install 'onboard' or 'florence'.</source><translation>Aucun clavier virtuel trouvé.
 Veuillez installer 'onboard' ou 'florence'.</translation></message>
+    <message><source>Voice commands</source><translation>Commandes vocales</translation></message>
+    <message><source>Spoken phrase</source><translation>Phrase prononcée</translation></message>
+    <message><source>Output</source><translation>Sortie</translation></message>
+    <message><source>Add</source><translation>Ajouter</translation></message>
+    <message><source>Remove</source><translation>Supprimer</translation></message>
+    <message><source>Lock to screen edge:</source><translation>Ancrer au bord de l'écran :</translation></message>
+    <message><source>None</source><translation>Aucun</translation></message>
+    <message><source>Left edge</source><translation>Bord gauche</translation></message>
+    <message><source>Right edge</source><translation>Bord droit</translation></message>
+    <message><source>Slide off screen when idle</source><translation>Glisser hors écran en veille</translation></message>
+    <message><source>Audio feedback</source><translation>Retour audio</translation></message>
+    <message><source>Microphone:</source><translation>Microphone :</translation></message>
+    <message><source>System default</source><translation>Périphérique par défaut</translation></message>
+    <message><source>%1 (default)</source><translation>%1 (par défaut)</translation></message>
+    <message><source>Speech model:</source><translation>Modèle vocal :</translation></message>
+    <message><source>Speech language:</source><translation>Langue de la parole :</translation></message>
+    <message><source>Auto-detect</source><translation>Détection automatique</translation></message>
+    <message><source>Type text by:</source><translation>Saisir le texte par :</translation></message>
+    <message><source>Simulated keystrokes</source><translation>Frappes simulées</translation></message>
+    <message><source>Clipboard paste</source><translation>Collage du presse-papiers</translation></message>
+    <message><source>Type partial results live</source><translation>Saisir les résultats partiels en direct</translation></message>
+    <message><source>Auto spacing &amp;&amp; capitalization</source><translation>Espacement et majuscules automatiques</translation></message>
+    <message><source>Dictation hotkey:</source><translation>Raccourci de dictée :</translation></message>
+    <message><source>Hold to talk (push-to-talk)</source><translation>Maintenir pour parler (push-to-talk)</translation></message>
+    <message><source>Reset to Defaults</source><translation>Réinitialiser</translation></message>
+    <message><source>On-Screen Keyboard</source><translation>Clavier virtuel</translation></message>
+    <message><source>Installing on-screen keyboard…</source><translation>Installation du clavier virtuel…</translation></message>
 </context>
 </TS>

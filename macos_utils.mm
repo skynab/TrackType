@@ -24,6 +24,7 @@ void applyMacOSWindowBehavior(quintptr winId)
 // kVK_ANSI_V == 9, kVK_Delete (Backspace) == 51 (stable Carbon virtual keycodes).
 static const CGKeyCode kVkV         = 9;
 static const CGKeyCode kVkBackspace = 51;
+static const CGKeyCode kVkLeftArrow = 123;
 
 void macTypeUnicode(const QString& text)
 {
@@ -52,6 +53,16 @@ void macSendBackspaces(int count)
     for (int i = 0; i < count; ++i) {
         CGEventRef down = CGEventCreateKeyboardEvent(nullptr, kVkBackspace, true);
         CGEventRef up   = CGEventCreateKeyboardEvent(nullptr, kVkBackspace, false);
+        if (down) { CGEventPost(kCGHIDEventTap, down); CFRelease(down); }
+        if (up)   { CGEventPost(kCGHIDEventTap, up);   CFRelease(up); }
+    }
+}
+
+void macSendLeftArrows(int count)
+{
+    for (int i = 0; i < count; ++i) {
+        CGEventRef down = CGEventCreateKeyboardEvent(nullptr, kVkLeftArrow, true);
+        CGEventRef up   = CGEventCreateKeyboardEvent(nullptr, kVkLeftArrow, false);
         if (down) { CGEventPost(kCGHIDEventTap, down); CFRelease(down); }
         if (up)   { CGEventPost(kCGHIDEventTap, up);   CFRelease(up); }
     }

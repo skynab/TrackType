@@ -2,6 +2,7 @@
 #include <QSignalSpy>
 #include <QFile>
 #include "whisperengine.h"
+#include "transcriptprocessor.h"
 
 #ifndef TT_FIXTURE_DIR
 #  define TT_FIXTURE_DIR ""
@@ -90,9 +91,12 @@ void WhisperEngineTest::recognizesSpeechFromWav()
 
     QVERIFY2(finals.wait(120000), "no finalTranscript was emitted in time");
 
+    // End-to-end: pipe each final transcript through the same TranscriptProcessor
+    // the app uses, and assert the post-processing text is correct.
+    TranscriptProcessor processor;
     QString text;
     for (const QList<QVariant>& sig : finals)
-        text += sig.at(0).toString() + ' ';
+        text += processor.processFinal(sig.at(0).toString()).text + ' ';
 
     QVERIFY2(text.contains("country", Qt::CaseInsensitive),
              qPrintable(QStringLiteral("unexpected transcript: '%1'").arg(text)));

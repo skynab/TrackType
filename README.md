@@ -59,6 +59,27 @@ via a system-wide shortcut, with an optional push-to-talk (hold) mode. It uses
 `RegisterHotKey` reports only key-press, so push-to-talk there behaves like
 toggle.
 
+## Using TrackType
+
+1. **First run** downloads a small speech model (`ggml-base.en`) — see
+   [BUILD.md](BUILD.md#speech-model). Grant the microphone (and, on macOS,
+   Accessibility) permission when prompted.
+2. **Start dictating** by clicking the mic **Dictate** toggle in the toolbar, the
+   tray menu (*Start Dictation*), or the global **hotkey** (Settings → *Dictation
+   hotkey*; toggle or push-to-talk). The toolbar dot shows state: grey idle,
+   green listening, blue transcribing, orange injecting, amber paused, red error.
+3. **Recognized speech is typed** into whatever window has focus. A preview popup
+   shows the in-progress text before it is committed.
+4. **Pause / Resume** (tray) keeps the engine warm but stops typing; **Undo Last
+   Injection** removes the last committed text.
+5. **Voice commands** (Settings → *Voice commands*) map a spoken phrase to output
+   text — built in: *"new line"* → newline, *"period"* → `.`, *"brackets"* →
+   `[]` with the caret placed between. The table is editable and saved; the
+   `{|}` marker in an output positions the caret. This is the seam the full
+   command system will build on.
+
+See [BUILD.md](BUILD.md) for building, tests, model setup, and per-OS permissions.
+
 ## Build
 
 ```bash

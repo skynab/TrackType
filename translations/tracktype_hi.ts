@@ -49,6 +49,25 @@
     <message><source>Dwell Active</source><translation>ड्वेल सक्रिय</translation></message>
     <message><source>Enable dwell-clicking (same as the Auto button)</source><translation>ड्वेल-क्लिकिंग सक्षम करें (Auto बटन के समान)</translation></message>
     <message><source>Close application</source><translation>एप्लिकेशन बंद करें</translation></message>
+    <message><source>Start Dictation</source><translation>श्रुतलेखन शुरू करें</translation></message>
+    <message><source>Stop Dictation</source><translation>श्रुतलेखन रोकें</translation></message>
+    <message><source>Start dictation</source><translation>श्रुतलेखन शुरू करें</translation></message>
+    <message><source>Stop dictation</source><translation>श्रुतलेखन रोकें</translation></message>
+    <message><source>Pause Injecting</source><translation>इनपुट रोकें</translation></message>
+    <message><source>Resume Injecting</source><translation>इनपुट फिर से शुरू करें</translation></message>
+    <message><source>Undo Last Injection</source><translation>अंतिम इनपुट पूर्ववत करें</translation></message>
+    <message><source>Settings…</source><translation>सेटिंग्स…</translation></message>
+    <message><source>Ready to dictate</source><translation>श्रुतलेखन के लिए तैयार</translation></message>
+    <message><source>Starting speech recognition…</source><translation>वाक् पहचान शुरू हो रही है…</translation></message>
+    <message><source>Loading speech model…</source><translation>वाक् मॉडल लोड हो रहा है…</translation></message>
+    <message><source>Downloading speech model…</source><translation>वाक् मॉडल डाउनलोड हो रहा है…</translation></message>
+    <message><source>Downloading speech recognition model…</source><translation>वाक् पहचान मॉडल डाउनलोड हो रहा है…</translation></message>
+    <message><source>No speech model</source><translation>कोई वाक् मॉडल नहीं</translation></message>
+    <message><source>Transcribing…</source><translation>लिप्यंतरण हो रहा है…</translation></message>
+    <message><source>Injecting…</source><translation>इनपुट हो रहा है…</translation></message>
+    <message><source>Listening</source><translation>सुन रहा है</translation></message>
+    <message><source>Paused (engine warm)</source><translation>रुका हुआ (इंजन तैयार)</translation></message>
+    <message><source>TrackType — %1</source><translation>TrackType — %1</translation></message>
 </context>
 <context>
     <name>SettingsDialog</name>
@@ -106,5 +125,26 @@
     <message><source>No on-screen keyboard was found.
 Please install 'onboard' or 'florence'.</source><translation>कोई ऑन-स्क्रीन कीबोर्ड नहीं मिला।
 कृपया 'onboard' या 'florence' इंस्टॉल करें।</translation></message>
+    <message><source>Voice commands</source><translation>वॉइस कमांड</translation></message>
+    <message><source>Spoken phrase</source><translation>बोला गया वाक्यांश</translation></message>
+    <message><source>Output</source><translation>आउटपुट</translation></message>
+    <message><source>Add</source><translation>जोड़ें</translation></message>
+    <message><source>Remove</source><translation>हटाएं</translation></message>
+    <message><source>Audio feedback</source><translation>ऑडियो फीडबैक</translation></message>
+    <message><source>Microphone:</source><translation>माइक्रोफ़ोन:</translation></message>
+    <message><source>System default</source><translation>सिस्टम डिफ़ॉल्ट</translation></message>
+    <message><source>%1 (default)</source><translation>%1 (डिफ़ॉल्ट)</translation></message>
+    <message><source>Speech model:</source><translation>वाक् मॉडल:</translation></message>
+    <message><source>Speech language:</source><translation>वाक् भाषा:</translation></message>
+    <message><source>Auto-detect</source><translation>स्वतः पहचान</translation></message>
+    <message><source>Type text by:</source><translation>टेक्स्ट इनपुट का तरीका:</translation></message>
+    <message><source>Simulated keystrokes</source><translation>अनुकरणित कीस्ट्रोक</translation></message>
+    <message><source>Clipboard paste</source><translation>क्लिपबोर्ड पेस्ट</translation></message>
+    <message><source>Type partial results live</source><translation>आंशिक परिणाम लाइव टाइप करें</translation></message>
+    <message><source>Auto spacing &amp;&amp; capitalization</source><translation>स्वतः रिक्ति और बड़े अक्षर</translation></message>
+    <message><source>Dictation hotkey:</source><translation>श्रुतलेखन हॉटकी:</translation></message>
+    <message><source>Hold to talk (push-to-talk)</source><translation>बोलने के लिए दबाए रखें (पुश-टू-टॉक)</translation></message>
+    <message><source>On-Screen Keyboard</source><translation>ऑन-स्क्रीन कीबोर्ड</translation></message>
+    <message><source>Installing on-screen keyboard…</source><translation>ऑन-स्क्रीन कीबोर्ड इंस्टॉल हो रहा है…</translation></message>
 </context>
 </TS>

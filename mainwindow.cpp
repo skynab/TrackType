@@ -100,6 +100,15 @@ MainWindow::MainWindow(QTranslator* startupTranslator, QWidget* parent)
     m_settings.autoFormat      = m_persist.value("inject/autoFormat", true).toBool();
     m_settings.hotkey          = m_persist.value("hotkey/sequence",   "").toString();
     m_settings.hotkeyPushToTalk= m_persist.value("hotkey/pushToTalk", false).toBool();
+
+    // Voice commands: fall back to the built-in defaults on first run.
+    const QVariantMap cmdVar = m_persist.value("commands").toMap();
+    if (cmdVar.isEmpty()) {
+        m_settings.commands = TranscriptProcessor::defaultCommands();
+    } else {
+        for (auto it = cmdVar.constBegin(); it != cmdVar.constEnd(); ++it)
+            m_settings.commands.insert(it.key(), it.value().toString());
+    }
     m_settings.language        = m_persist.value("language",          "en").toString();
     m_settings.edgeLock        = static_cast<EdgeLock>(m_persist.value("window/edgeLock", 0).toInt());
     m_settings.edgeHide        = m_persist.value("window/edgeHide", false).toBool();
@@ -529,7 +538,8 @@ void MainWindow::applyInjectionSettings()
         m_settings.injectionMode == InjectionMode::ClipboardPaste
             ? TextInjector::Mode::ClipboardPaste
             : TextInjector::Mode::Type);
-    m_normalizer.setEnabled(m_settings.autoFormat);
+    m_processor.setAutoFormat(m_settings.autoFormat);
+    m_processor.setCommands(m_settings.commands);
 }
 
 void MainWindow::onSttPartial(const QString& raw)
@@ -537,7 +547,7 @@ void MainWindow::onSttPartial(const QString& raw)
     qInfo("TrackType STT (partial) > %s", qUtf8Printable(raw));
 
     // Always preview the would-be-typed text near the toolbar.
-    const QString shown = m_normalizer.previewPartial(raw);
+    const QString shown = m_processor.previewPartial(raw);
     if (m_preview)
         m_preview->showText(shown, frameGeometry());
     if (!m_paused)
@@ -568,16 +578,20 @@ void MainWindow::onSttFinal(const QString& raw)
         m_pendingPartialLen = 0;
     }
 
-    const QString out = m_normalizer.normalize(raw);
+    const TranscriptProcessor::Result r = m_processor.processFinal(raw);
 
     if (m_paused) {
         // Engine stays warm but nothing is typed while paused.
         return;
     }
-    if (!out.isEmpty()) {
-        TextInjector::typeText(out);
-        m_lastInjectedLen = int(out.size());
-        if (m_undoAct) m_undoAct->setEnabled(true);
+    if (!r.text.isEmpty()) {
+        TextInjector::typeText(r.text);
+        if (r.cursorBack > 0)
+            TextInjector::moveCursorLeft(r.cursorBack);
+        // Undo removes the inserted text; skip it for caret-repositioned commands
+        // (e.g. brackets) where a plain backspace count would be wrong.
+        m_lastInjectedLen = (r.cursorBack == 0) ? int(r.text.size()) : 0;
+        if (m_undoAct) m_undoAct->setEnabled(m_lastInjectedLen > 0);
         setSttStatus(SttState::Injecting, tr("Injecting…"));
         // Fall back to the listening state shortly after.
         QTimer::singleShot(150, this, [this]{
@@ -596,7 +610,7 @@ void MainWindow::onDictateToggled(bool on)
             return;
         }
         // Fresh session: reset formatting + partial/undo bookkeeping + pause.
-        m_normalizer.reset();
+        m_processor.reset();
         m_pendingPartialLen = 0;
         m_paused = false;
 
@@ -1093,6 +1107,10 @@ void MainWindow::applySettings(const AppSettings& s)
     m_persist.setValue("inject/autoFormat",  s.autoFormat);
     m_persist.setValue("hotkey/sequence",    s.hotkey);
     m_persist.setValue("hotkey/pushToTalk",  s.hotkeyPushToTalk);
+    QVariantMap cmdVar;
+    for (auto it = s.commands.constBegin(); it != s.commands.constEnd(); ++it)
+        cmdVar.insert(it.key(), it.value());
+    m_persist.setValue("commands",           cmdVar);
     m_persist.setValue("language",           s.language);
 
     // Switch the live capture to the chosen microphone (restarts capture if the

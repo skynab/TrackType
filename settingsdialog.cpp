@@ -15,6 +15,8 @@
 #include <QPushButton>
 #include <QSvgRenderer>
 #include <QMessageBox>
+#include <QTableWidget>
+#include <QHeaderView>
 #include <QProcess>
 #include <QProgressDialog>
 #include <QStandardPaths>
@@ -23,6 +25,33 @@
 #  include <QDesktopServices>
 #  include <QUrl>
 #endif
+
+namespace {
+// Make control characters visible/editable in the commands table.
+QString escapeForEditor(const QString& s)
+{
+    QString e = s;
+    e.replace('\\', "\\\\");
+    e.replace('\n', "\\n");
+    e.replace('\t', "\\t");
+    return e;
+}
+QString unescapeFromEditor(const QString& s)
+{
+    QString out;
+    for (int i = 0; i < s.size(); ++i) {
+        if (s.at(i) == '\\' && i + 1 < s.size()) {
+            const QChar n = s.at(++i);
+            if (n == 'n') out += '\n';
+            else if (n == 't') out += '\t';
+            else out += n;             // includes "\\" → "\"
+        } else {
+            out += s.at(i);
+        }
+    }
+    return out;
+}
+} // namespace
 
 // ── TrackIR palette ──────────────────────────────────────────
 static const char* STYLE = R"(
@@ -209,6 +238,10 @@ void SettingsDialog::retranslateUi()
 #endif
 
     m_grpWin->setTitle(tr("Window"));
+    m_grpCommands->setTitle(tr("Voice commands"));
+    m_cmdTable->setHorizontalHeaderLabels({tr("Spoken phrase"), tr("Output")});
+    m_btnAddCmd->setText(tr("Add"));
+    m_btnRemoveCmd->setText(tr("Remove"));
     m_lblEdgeLock->setText(tr("Lock to screen edge:"));
     m_cmbEdgeLock->setItemText(0, tr("None"));
     m_cmbEdgeLock->setItemText(1, tr("Left edge"));
@@ -507,6 +540,44 @@ void SettingsDialog::buildUi()
 
     root->addWidget(m_grpWin);
 
+    // ── Voice commands ────────────────────────────────────────
+    m_grpCommands = new QGroupBox(tr("Voice commands"));
+    auto* cmdLay  = new QVBoxLayout(m_grpCommands);
+    cmdLay->setSpacing(6);
+
+    m_cmdTable = new QTableWidget(0, 2);
+    m_cmdTable->setHorizontalHeaderLabels({tr("Spoken phrase"), tr("Output")});
+    m_cmdTable->horizontalHeader()->setStretchLastSection(true);
+    m_cmdTable->verticalHeader()->setVisible(false);
+    m_cmdTable->setSelectionBehavior(QAbstractItemView::SelectRows);
+    m_cmdTable->setMaximumHeight(140);
+    cmdLay->addWidget(m_cmdTable);
+
+    auto* cmdBtns = new QHBoxLayout;
+    m_btnAddCmd    = new QPushButton(tr("Add"));
+    m_btnRemoveCmd = new QPushButton(tr("Remove"));
+    m_btnAddCmd->setProperty("flat", true);
+    m_btnRemoveCmd->setProperty("flat", true);
+    cmdBtns->addStretch(1);
+    cmdBtns->addWidget(m_btnAddCmd);
+    cmdBtns->addWidget(m_btnRemoveCmd);
+    cmdLay->addLayout(cmdBtns);
+
+    connect(m_btnAddCmd, &QPushButton::clicked, this, [this]{
+        const int row = m_cmdTable->rowCount();
+        m_cmdTable->insertRow(row);
+        m_cmdTable->setItem(row, 0, new QTableWidgetItem);
+        m_cmdTable->setItem(row, 1, new QTableWidgetItem);
+        m_cmdTable->editItem(m_cmdTable->item(row, 0));
+    });
+    connect(m_btnRemoveCmd, &QPushButton::clicked, this, [this]{
+        const int row = m_cmdTable->currentRow();
+        if (row >= 0)
+            m_cmdTable->removeRow(row);
+    });
+
+    root->addWidget(m_grpCommands);
+
     // ── Buttons ───────────────────────────────────────────────
     m_buttons  = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
 #ifdef Q_OS_LINUX
@@ -628,6 +699,14 @@ void SettingsDialog::loadFrom(const AppSettings& s)
     m_hotkeyEdit->setKeySequence(QKeySequence(s.hotkey));
     m_chkPushToTalk->setChecked(s.hotkeyPushToTalk);
 
+    m_cmdTable->setRowCount(0);
+    for (auto it = s.commands.constBegin(); it != s.commands.constEnd(); ++it) {
+        const int row = m_cmdTable->rowCount();
+        m_cmdTable->insertRow(row);
+        m_cmdTable->setItem(row, 0, new QTableWidgetItem(it.key()));
+        m_cmdTable->setItem(row, 1, new QTableWidgetItem(escapeForEditor(it.value())));
+    }
+
     for (int i = 0; i < m_cmbLanguage->count(); ++i) {
         if (m_cmbLanguage->itemData(i).toString() == s.language) {
             m_cmbLanguage->setCurrentIndex(i);
@@ -660,6 +739,18 @@ AppSettings SettingsDialog::readUi() const
     s.autoFormat       = m_chkAutoFormat->isChecked();
     s.hotkey           = m_hotkeyEdit->keySequence().toString(QKeySequence::PortableText);
     s.hotkeyPushToTalk = m_chkPushToTalk->isChecked();
+
+    QMap<QString, QString> cmds;
+    for (int row = 0; row < m_cmdTable->rowCount(); ++row) {
+        const QTableWidgetItem* p = m_cmdTable->item(row, 0);
+        const QTableWidgetItem* o = m_cmdTable->item(row, 1);
+        const QString phrase = p ? p->text().trimmed().toLower() : QString();
+        if (phrase.isEmpty())
+            continue;
+        cmds.insert(phrase, o ? unescapeFromEditor(o->text()) : QString());
+    }
+    s.commands         = cmds;
+
     s.language         = m_cmbLanguage->currentData().toString();
     return s;
 }

@@ -3,6 +3,11 @@
 #include <QDialog>
 #include <QCheckBox>
 #include <QKeySequenceEdit>
+#include <QMap>
+
+QT_BEGIN_NAMESPACE
+class QTableWidget;
+QT_END_NAMESPACE
 #include <QDialogButtonBox>
 #include <QGroupBox>
 #include <QLabel>
@@ -42,6 +47,10 @@ struct AppSettings {
     // Global dictation hotkey.
     QString hotkey;                // e.g. "Ctrl+Alt+D" ("" = none)
     bool    hotkeyPushToTalk = false;  // hold-to-talk vs. press-to-toggle
+
+    // Voice commands: spoken phrase → output text (the "{|}" marker positions the
+    // caret).  Empty means "use the built-in defaults".
+    QMap<QString, QString> commands;
 
     // Language (ISO code: "en", "fr", "es", "zh_CN", "ja", "ko", …)
     QString language = "en";
@@ -87,6 +96,12 @@ private:
 
     // ── Group boxes (titles need retranslation) ───────────────
     QGroupBox* m_grpWin = nullptr;
+    QGroupBox* m_grpCommands = nullptr;
+
+    // Voice-commands editor.
+    QTableWidget* m_cmdTable     = nullptr;
+    QPushButton*  m_btnAddCmd    = nullptr;
+    QPushButton*  m_btnRemoveCmd = nullptr;
 
     // ── Form-row labels (need retranslation) ──────────────────
     QLabel* m_lblOpacity  = nullptr;

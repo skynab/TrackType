@@ -59,7 +59,7 @@ jobs:
         # Fast tests only — they don't link whisper, so this avoids compiling the
         # vendored whisper.cpp/ggml on every platform.  The whisper integration
         # test is built/run in a Linux-only step below.
-        run: cmake --build build-tests --config Debug --parallel --target tst_placeholder tst_audiocapture tst_textnormalizer
+        run: cmake --build build-tests --config Debug --parallel --target tst_placeholder tst_audiocapture tst_textnormalizer tst_transcriptprocessor
 
       - name: Run tests
         env:

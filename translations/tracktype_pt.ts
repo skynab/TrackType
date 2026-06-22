@@ -49,6 +49,25 @@
     <message><source>Dwell Active</source><translation>Permanência ativa</translation></message>
     <message><source>Enable dwell-clicking (same as the Auto button)</source><translation>Ativar clique por permanência (igual ao botão Auto)</translation></message>
     <message><source>Close application</source><translation>Fechar aplicação</translation></message>
+    <message><source>Start Dictation</source><translation>Iniciar ditado</translation></message>
+    <message><source>Stop Dictation</source><translation>Parar ditado</translation></message>
+    <message><source>Start dictation</source><translation>Iniciar ditado</translation></message>
+    <message><source>Stop dictation</source><translation>Parar ditado</translation></message>
+    <message><source>Pause Injecting</source><translation>Pausar inserção</translation></message>
+    <message><source>Resume Injecting</source><translation>Retomar inserção</translation></message>
+    <message><source>Undo Last Injection</source><translation>Desfazer última inserção</translation></message>
+    <message><source>Settings…</source><translation>Configurações…</translation></message>
+    <message><source>Ready to dictate</source><translation>Pronto para ditar</translation></message>
+    <message><source>Starting speech recognition…</source><translation>Iniciando reconhecimento de fala…</translation></message>
+    <message><source>Loading speech model…</source><translation>Carregando modelo de fala…</translation></message>
+    <message><source>Downloading speech model…</source><translation>Baixando modelo de fala…</translation></message>
+    <message><source>Downloading speech recognition model…</source><translation>Baixando modelo de reconhecimento de fala…</translation></message>
+    <message><source>No speech model</source><translation>Sem modelo de fala</translation></message>
+    <message><source>Transcribing…</source><translation>Transcrevendo…</translation></message>
+    <message><source>Injecting…</source><translation>Inserindo…</translation></message>
+    <message><source>Listening</source><translation>Ouvindo</translation></message>
+    <message><source>Paused (engine warm)</source><translation>Pausado (motor pronto)</translation></message>
+    <message><source>TrackType — %1</source><translation>TrackType — %1</translation></message>
 </context>
 <context>
     <name>SettingsDialog</name>
@@ -106,5 +125,26 @@
     <message><source>No on-screen keyboard was found.
 Please install 'onboard' or 'florence'.</source><translation>Nenhum teclado virtual foi encontrado.
 Instale 'onboard' ou 'florence'.</translation></message>
+    <message><source>Voice commands</source><translation>Comandos de voz</translation></message>
+    <message><source>Spoken phrase</source><translation>Frase falada</translation></message>
+    <message><source>Output</source><translation>Saída</translation></message>
+    <message><source>Add</source><translation>Adicionar</translation></message>
+    <message><source>Remove</source><translation>Remover</translation></message>
+    <message><source>Audio feedback</source><translation>Retorno de áudio</translation></message>
+    <message><source>Microphone:</source><translation>Microfone:</translation></message>
+    <message><source>System default</source><translation>Padrão do sistema</translation></message>
+    <message><source>%1 (default)</source><translation>%1 (padrão)</translation></message>
+    <message><source>Speech model:</source><translation>Modelo de fala:</translation></message>
+    <message><source>Speech language:</source><translation>Idioma da fala:</translation></message>
+    <message><source>Auto-detect</source><translation>Detecção automática</translation></message>
+    <message><source>Type text by:</source><translation>Digitar texto por:</translation></message>
+    <message><source>Simulated keystrokes</source><translation>Toques de tecla simulados</translation></message>
+    <message><source>Clipboard paste</source><translation>Colar da área de transferência</translation></message>
+    <message><source>Type partial results live</source><translation>Digitar resultados parciais ao vivo</translation></message>
+    <message><source>Auto spacing &amp;&amp; capitalization</source><translation>Espaçamento e maiúsculas automáticos</translation></message>
+    <message><source>Dictation hotkey:</source><translation>Atalho de ditado:</translation></message>
+    <message><source>Hold to talk (push-to-talk)</source><translation>Segurar para falar (push-to-talk)</translation></message>
+    <message><source>On-Screen Keyboard</source><translation>Teclado virtual</translation></message>
+    <message><source>Installing on-screen keyboard…</source><translation>Instalando teclado virtual…</translation></message>
 </context>
 </TS>
