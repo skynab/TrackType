@@ -26,6 +26,11 @@
 #include "translations/tsparser.h"
 #include "audiocapture.h"
 #include "levelmeter.h"
+#include "whisperengine.h"
+#include "modelmanager.h"
+#include "modeldownloader.h"
+#include <QProgressDialog>
+#include <QDir>
 #ifdef Q_OS_MAC
 #  include "macos_utils.h"
 #endif
@@ -121,6 +126,7 @@ MainWindow::MainWindow(QTranslator* startupTranslator, QWidget* parent)
     buildTray();
     loadWindowSettings();
     initAudio();
+    initStt();
 
     // If launch-on-startup is enabled, make sure the OS registration still
     // exists and points at the current executable (self-heals after updates).
@@ -332,6 +338,82 @@ void MainWindow::initAudio()
         connect(m_audio, &AudioCapture::levelChanged,
                 m_levelMeter, &LevelMeter::setLevel);
     m_audio->start();
+}
+
+void MainWindow::initStt()
+{
+    m_stt = new WhisperSttEngine(this);
+
+    // Feed the fixed-size capture windows straight into the recognizer.
+    if (m_audio)
+        connect(m_audio, &AudioCapture::chunkReady,
+                m_stt, &WhisperSttEngine::feedAudio);
+
+    // Begin a recognition session as soon as the model is ready.
+    connect(m_stt, &SttEngine::modelLoaded, this, [this]{
+        qInfo("TrackType STT: model loaded — starting recognition.");
+        m_stt->start();
+    });
+
+    // For now (no text-injection layer yet) just surface results to the console
+    // so end-to-end recognition can be validated.
+    connect(m_stt, &SttEngine::finalTranscript, this, [](const QString& text){
+        qInfo("TrackType STT > %s", qUtf8Printable(text));
+    });
+    connect(m_stt, &SttEngine::errorOccurred, this, [](const QString& msg){
+        qWarning("TrackType STT error: %s", qUtf8Printable(msg));
+    });
+
+    // Defer the model check/download until the event loop is running so the main
+    // window is visible before any modal download dialog appears.
+    QTimer::singleShot(0, this, [this]{ ensureModelThenStart(); });
+}
+
+void MainWindow::ensureModelThenStart()
+{
+    const QString path = ModelManager::modelFilePath();
+    if (ModelManager::isModelAvailable()) {
+        m_stt->loadModel(path);
+        return;
+    }
+
+    // First run: download the model with a cancelable progress dialog.
+    QDir().mkpath(ModelManager::modelsDir());
+    auto* dl   = new ModelDownloader(this);
+    auto* prog = new QProgressDialog(
+        tr("Downloading speech recognition model…"), tr("Cancel"), 0, 100, this);
+    prog->setWindowTitle(tr("TrackType"));
+    prog->setWindowModality(Qt::WindowModal);
+    prog->setMinimumDuration(0);
+    prog->setAutoClose(false);
+    prog->setAutoReset(false);
+
+    connect(dl, &ModelDownloader::progress, this, [prog](qint64 received, qint64 total){
+        if (total > 0) {
+            prog->setMaximum(100);
+            prog->setValue(int((received * 100) / total));
+        } else {
+            prog->setMaximum(0);   // unknown length → busy indicator
+        }
+    });
+    connect(prog, &QProgressDialog::canceled, dl, &ModelDownloader::cancel);
+    connect(dl, &ModelDownloader::finished, this,
+            [this, dl, prog, path](bool ok, const QString& error){
+        prog->close();
+        prog->deleteLater();
+        dl->deleteLater();
+        if (ok) {
+            m_stt->loadModel(path);
+        } else {
+            QMessageBox::warning(this, tr("TrackType"),
+                tr("Could not download the speech recognition model:\n%1\n\n"
+                   "Dictation will be unavailable until it is downloaded.")
+                    .arg(error));
+        }
+    });
+
+    dl->start(ModelManager::defaultModelUrl(), path,
+              ModelManager::defaultModelSha256());
 }
 
 // ─── Resize / drag the frameless window ──────────────────────────────────

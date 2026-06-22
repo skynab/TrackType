@@ -17,6 +17,7 @@
 
 class AudioCapture;
 class LevelMeter;
+class WhisperSttEngine;
 
 class MainWindow : public QWidget
 {
@@ -51,6 +52,8 @@ private:
     void buildUi();
     void buildTray();
     void initAudio();
+    void initStt();
+    void ensureModelThenStart();
     void saveWindowSettings();
     void loadWindowSettings();
     void retranslateUi();
@@ -94,6 +97,7 @@ private:
 
     // ── Sub-objects ───────────────────────────────────────────
     AudioCapture*     m_audio      = nullptr;
+    WhisperSttEngine* m_stt        = nullptr;
     QSystemTrayIcon*  m_tray       = nullptr;
     QMenu*            m_trayMenu   = nullptr;
     QAction*          m_showAct    = nullptr;

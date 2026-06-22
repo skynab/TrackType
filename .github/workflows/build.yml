@@ -56,7 +56,9 @@ jobs:
         run: cmake -B build-tests -DBUILD_TESTS=ON -DCMAKE_BUILD_TYPE=Debug
 
       - name: Build tests
-        run: cmake --build build-tests --config Debug --parallel
+        # Build only the test targets — they don't link whisper, so this avoids
+        # compiling the vendored whisper.cpp/ggml in the unit-test job.
+        run: cmake --build build-tests --config Debug --parallel --target tst_placeholder tst_audiocapture
 
       - name: Run tests
         env:

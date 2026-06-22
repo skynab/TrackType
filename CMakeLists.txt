@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(TrackType VERSION 0.9.2 LANGUAGES CXX)
+project(TrackType VERSION 0.9.2 LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -12,17 +12,51 @@ set(CMAKE_AUTOUIC ON)
 find_package(Qt6 QUIET COMPONENTS Core Gui Widgets)
 if(Qt6_FOUND)
     set(QT Qt6)
-    find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Svg Multimedia)
+    find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Svg Multimedia Network)
     find_package(Qt6 OPTIONAL_COMPONENTS LinguistTools QUIET)
     set(LINGUIST_FOUND ${Qt6LinguistTools_FOUND})
     message(STATUS "TrackType: building with Qt6 ${Qt6_VERSION}")
 else()
-    find_package(Qt5 5.12 REQUIRED COMPONENTS Core Gui Widgets Svg Multimedia)
+    find_package(Qt5 5.12 REQUIRED COMPONENTS Core Gui Widgets Svg Multimedia Network)
     set(QT Qt5)
     find_package(Qt5 OPTIONAL_COMPONENTS LinguistTools QUIET)
     set(LINGUIST_FOUND ${Qt5LinguistTools_FOUND})
     message(STATUS "TrackType: building with Qt5 ${Qt5_VERSION}")
 endif()
+
+# ── whisper.cpp (vendored, third_party/whisper) ───────────────────────────────
+# Built as a static library, CPU-only — all GPU/accelerator backends and the
+# upstream examples/tests are disabled before pulling the project in.  Linking
+# the `whisper` target transitively provides ggml and the whisper.h include path.
+#
+# These are forced CACHE values (not plain variables) so they win regardless of
+# the policy version (CMP0077) in effect inside the vendored subproject.
+set(BUILD_SHARED_LIBS        OFF CACHE BOOL "" FORCE)   # static whisper + ggml
+set(WHISPER_BUILD_TESTS      OFF CACHE BOOL "" FORCE)
+set(WHISPER_BUILD_EXAMPLES   OFF CACHE BOOL "" FORCE)
+set(WHISPER_BUILD_SERVER     OFF CACHE BOOL "" FORCE)
+set(GGML_METAL               OFF CACHE BOOL "" FORCE)   # no Apple GPU
+set(GGML_METAL_EMBED_LIBRARY OFF CACHE BOOL "" FORCE)
+set(GGML_ACCELERATE          OFF CACHE BOOL "" FORCE)
+set(GGML_CUDA                OFF CACHE BOOL "" FORCE)
+set(GGML_VULKAN              OFF CACHE BOOL "" FORCE)
+set(GGML_OPENCL              OFF CACHE BOOL "" FORCE)
+set(GGML_HIP                 OFF CACHE BOOL "" FORCE)
+set(GGML_SYCL                OFF CACHE BOOL "" FORCE)
+set(GGML_KOMPUTE             OFF CACHE BOOL "" FORCE)
+set(GGML_RPC                 OFF CACHE BOOL "" FORCE)
+set(GGML_BLAS                OFF CACHE BOOL "" FORCE)
+set(GGML_OPENMP              OFF CACHE BOOL "" FORCE)   # no OpenMP runtime dep
+set(GGML_NATIVE              OFF CACHE BOOL "" FORCE)   # portable (no -march=native)
+
+# Don't run Qt autogen (moc/uic/rcc) over the vendored C/C++ sources.
+set(CMAKE_AUTOMOC OFF)
+set(CMAKE_AUTOUIC OFF)
+set(CMAKE_AUTORCC OFF)
+add_subdirectory(third_party/whisper)
+set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTOUIC ON)
+set(CMAKE_AUTORCC ON)
 
 set(SOURCES
     main.cpp
@@ -31,6 +65,9 @@ set(SOURCES
     settingsdialog.cpp
     audiocapture.cpp
     levelmeter.cpp
+    whisperengine.cpp
+    modelmanager.cpp
+    modeldownloader.cpp
     translations/tsparser.cpp
     resources.qrc
 )
@@ -41,6 +78,10 @@ set(HEADERS
     settingsdialog.h
     audiocapture.h
     levelmeter.h
+    sttengine.h
+    whisperengine.h
+    modelmanager.h
+    modeldownloader.h
 )
 
 if(WIN32)
@@ -65,6 +106,8 @@ target_link_libraries(TrackType PRIVATE
     ${QT}::Gui
     ${QT}::Widgets
     ${QT}::Svg
+    ${QT}::Network
+    whisper
 )
 
 if(DEFINED BUILD_NUMBER)
