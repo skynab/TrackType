@@ -229,6 +229,8 @@ void SettingsDialog::retranslateUi()
     m_cmbInjectMode->setItemText(1, tr("Clipboard paste"));
     m_chkInjectPartials->setText(tr("Type partial results live"));
     m_chkAutoFormat->setText(tr("Auto spacing && capitalization"));
+    m_lblHotkey->setText(tr("Dictation hotkey:"));
+    m_chkPushToTalk->setText(tr("Hold to talk (push-to-talk)"));
     m_lblOpacity->setText(tr("Opacity:"));
     m_lblLanguage->setText(tr("Language:"));
     m_resetBtn->setText(tr("Reset to Defaults"));
@@ -403,6 +405,11 @@ void SettingsDialog::buildUi()
         m_chkInjectPartials->setEnabled(typeMode);
     });
 
+    // Global dictation hotkey.
+    m_lblHotkey = new QLabel(tr("Dictation hotkey:"));
+    m_hotkeyEdit = new QKeySequenceEdit;   // only the first chord is used
+    m_chkPushToTalk = new QCheckBox(tr("Hold to talk (push-to-talk)"));
+
     // Language names are shown in their native script — intentionally not tr()
     m_cmbLanguage = new QComboBox;
     m_cmbLanguage->setSizeAdjustPolicy(QComboBox::AdjustToContents);
@@ -440,6 +447,8 @@ void SettingsDialog::buildUi()
     wfl->addRow(m_lblInjectMode,  m_cmbInjectMode);
     wfl->addRow(m_chkInjectPartials);
     wfl->addRow(m_chkAutoFormat);
+    wfl->addRow(m_lblHotkey,    m_hotkeyEdit);
+    wfl->addRow(m_chkPushToTalk);
     wfl->addRow(m_lblLanguage,  m_cmbLanguage);
 
 #ifdef Q_OS_MAC
@@ -616,6 +625,9 @@ void SettingsDialog::loadFrom(const AppSettings& s)
     m_chkInjectPartials->setEnabled(s.injectionMode == InjectionMode::Type);
     m_chkAutoFormat->setChecked(s.autoFormat);
 
+    m_hotkeyEdit->setKeySequence(QKeySequence(s.hotkey));
+    m_chkPushToTalk->setChecked(s.hotkeyPushToTalk);
+
     for (int i = 0; i < m_cmbLanguage->count(); ++i) {
         if (m_cmbLanguage->itemData(i).toString() == s.language) {
             m_cmbLanguage->setCurrentIndex(i);
@@ -646,6 +658,8 @@ AppSettings SettingsDialog::readUi() const
     s.injectPartials   = m_chkInjectPartials->isChecked()
                          && (s.injectionMode == InjectionMode::Type);
     s.autoFormat       = m_chkAutoFormat->isChecked();
+    s.hotkey           = m_hotkeyEdit->keySequence().toString(QKeySequence::PortableText);
+    s.hotkeyPushToTalk = m_chkPushToTalk->isChecked();
     s.language         = m_cmbLanguage->currentData().toString();
     return s;
 }

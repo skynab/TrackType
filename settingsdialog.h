@@ -2,6 +2,7 @@
 #include <QComboBox>
 #include <QDialog>
 #include <QCheckBox>
+#include <QKeySequenceEdit>
 #include <QDialogButtonBox>
 #include <QGroupBox>
 #include <QLabel>
@@ -37,6 +38,10 @@ struct AppSettings {
     InjectionMode injectionMode = InjectionMode::Type;
     bool injectPartials = false;   // type live partials (Type mode) vs. only finals
     bool autoFormat     = true;    // auto spacing + sentence capitalization
+
+    // Global dictation hotkey.
+    QString hotkey;                // e.g. "Ctrl+Alt+D" ("" = none)
+    bool    hotkeyPushToTalk = false;  // hold-to-talk vs. press-to-toggle
 
     // Language (ISO code: "en", "fr", "es", "zh_CN", "ja", "ko", …)
     QString language = "en";
@@ -109,6 +114,9 @@ private:
     QComboBox*   m_cmbInjectMode  = nullptr;
     QCheckBox*   m_chkInjectPartials = nullptr;
     QCheckBox*   m_chkAutoFormat     = nullptr;
+    QLabel*           m_lblHotkey      = nullptr;
+    QKeySequenceEdit* m_hotkeyEdit     = nullptr;
+    QCheckBox*        m_chkPushToTalk  = nullptr;
     QComboBox*   m_cmbLanguage;
 
     // Edge lock

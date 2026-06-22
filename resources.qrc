@@ -5,6 +5,8 @@
         <file alias="optitrack_logo.svg">icons/optitrack_logo.svg</file>
         <file alias="close.svg">icons/close.svg</file>
         <file alias="settings.svg">icons/settings.svg</file>
+        <file alias="mic_off.svg">icons/mic_off.svg</file>
+        <file alias="mic_on.svg">icons/mic_on.svg</file>
         <file alias="checkmark.svg">icons/checkmark.svg</file>
         <file alias="toggle_off.svg">icons/toggle_off.svg</file>
         <file alias="toggle_on.svg">icons/toggle_on.svg</file>

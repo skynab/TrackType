@@ -256,7 +256,8 @@ struct Uinput {
         return true;
     }
 
-    void emit(int type, int code, int val)
+    // NB: not named emit() — that is a Qt keyword macro (expands to nothing).
+    void writeEvent(int type, int code, int val)
     {
         struct input_event ev;
         std::memset(&ev, 0, sizeof(ev));
@@ -264,21 +265,21 @@ struct Uinput {
         const ssize_t r = ::write(fd, &ev, sizeof(ev));
         (void)r;
     }
-    void syn() { emit(EV_SYN, SYN_REPORT, 0); }
+    void syn() { writeEvent(EV_SYN, SYN_REPORT, 0); }
 
     void tap(int code, bool shift)
     {
-        if (shift) { emit(EV_KEY, KEY_LEFTSHIFT, 1); syn(); }
-        emit(EV_KEY, code, 1); syn();
-        emit(EV_KEY, code, 0); syn();
-        if (shift) { emit(EV_KEY, KEY_LEFTSHIFT, 0); syn(); }
+        if (shift) { writeEvent(EV_KEY, KEY_LEFTSHIFT, 1); syn(); }
+        writeEvent(EV_KEY, code, 1); syn();
+        writeEvent(EV_KEY, code, 0); syn();
+        if (shift) { writeEvent(EV_KEY, KEY_LEFTSHIFT, 0); syn(); }
     }
     void tapWithCtrl(int code)
     {
-        emit(EV_KEY, KEY_LEFTCTRL, 1); syn();
-        emit(EV_KEY, code, 1); syn();
-        emit(EV_KEY, code, 0); syn();
-        emit(EV_KEY, KEY_LEFTCTRL, 0); syn();
+        writeEvent(EV_KEY, KEY_LEFTCTRL, 1); syn();
+        writeEvent(EV_KEY, code, 1); syn();
+        writeEvent(EV_KEY, code, 0); syn();
+        writeEvent(EV_KEY, KEY_LEFTCTRL, 0); syn();
     }
     void close()
     {

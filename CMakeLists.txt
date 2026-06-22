@@ -63,6 +63,8 @@ set(SOURCES
     mainwindow.cpp
     textinjector.cpp
     textnormalizer.cpp
+    globalhotkey.cpp
+    transcriptpreview.cpp
     settingsdialog.cpp
     audiocapture.cpp
     levelmeter.cpp
@@ -77,6 +79,8 @@ set(HEADERS
     mainwindow.h
     textinjector.h
     textnormalizer.h
+    globalhotkey.h
+    transcriptpreview.h
     settingsdialog.h
     audiocapture.h
     levelmeter.h
@@ -127,8 +131,9 @@ if(WIN32)
 elseif(APPLE)
     find_library(APP_SERVICES ApplicationServices REQUIRED)
     find_library(APPKIT AppKit REQUIRED)
+    find_library(CARBON Carbon REQUIRED)   # RegisterEventHotKey (global hotkey)
     target_sources(TrackType PRIVATE macos_utils.mm)
-    target_link_libraries(TrackType PRIVATE ${APP_SERVICES} ${APPKIT})
+    target_link_libraries(TrackType PRIVATE ${APP_SERVICES} ${APPKIT} ${CARBON})
     target_compile_definitions(TrackType PRIVATE PLATFORM_MACOS)
 elseif(UNIX)
     find_package(X11 REQUIRED)

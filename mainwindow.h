@@ -19,6 +19,8 @@
 class AudioCapture;
 class LevelMeter;
 class WhisperSttEngine;
+class GlobalHotkey;
+class TranscriptPreview;
 
 class MainWindow : public QWidget
 {
@@ -43,6 +45,7 @@ protected:
     void showEvent(QShowEvent*)        override;
 
 private slots:
+    void onDictateToggled(bool on);   // primary toggle: run/stop the dictation pipeline
     void onSettingsClicked();
     void onExitClicked();
     void onTrayActivated(QSystemTrayIcon::ActivationReason);
@@ -63,8 +66,15 @@ private:
     void applyInjectionSettings();
 
     // STT status surfaced in the toolbar (a coloured dot + tooltip) and tray.
-    enum class SttState { Idle, Busy, Active, Error };
+    enum class SttState { Idle, Busy, Listening, Transcribing, Injecting, Paused, Error };
     void setSttStatus(SttState state, const QString& text);
+
+    void setupHotkey();          // (re)register the global dictation hotkey
+    void onHotkeyPressed();
+    void onHotkeyReleased();
+    void togglePause();          // stop injecting but keep the engine warm
+    void undoLastInjection();    // backspace the last committed text
+    void playCue();              // optional start/stop audio cue
     void saveWindowSettings();
     void loadWindowSettings();
     void retranslateUi();
@@ -89,6 +99,7 @@ private:
     QWidget*      m_titleBar   = nullptr;
     QLabel*       m_titleIcon  = nullptr;
     QLabel*       m_titleLabel = nullptr;
+    QPushButton*  m_dictateBtn = nullptr;   // primary "Dictate" toggle
     QPushButton*  m_settingsBtn= nullptr;
     QPushButton*  m_exitBtn    = nullptr;
     LevelMeter*   m_levelMeter = nullptr;
@@ -110,11 +121,19 @@ private:
     // ── Sub-objects ───────────────────────────────────────────
     AudioCapture*     m_audio      = nullptr;
     WhisperSttEngine* m_stt        = nullptr;
+    GlobalHotkey*     m_hotkey     = nullptr;
+    TranscriptPreview* m_preview   = nullptr;
     TextNormalizer    m_normalizer;          // spacing/capitalization of segments
     int               m_pendingPartialLen = 0; // chars of the live partial on screen
+    int               m_lastInjectedLen   = 0; // chars of the last committed final
+    bool              m_paused            = false;
     QSystemTrayIcon*  m_tray       = nullptr;
     QMenu*            m_trayMenu   = nullptr;
     QAction*          m_showAct    = nullptr;
+    QAction*          m_dictateAct = nullptr;
+    QAction*          m_pauseAct   = nullptr;
+    QAction*          m_undoAct    = nullptr;
+    QAction*          m_settingsAct= nullptr;
     QAction*          m_quitAct    = nullptr;
     QTranslator*      m_translator = nullptr;
 #ifdef HAVE_MULTIMEDIA

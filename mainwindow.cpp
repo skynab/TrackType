@@ -30,8 +30,11 @@
 #include "whisperengine.h"
 #include "modelmanager.h"
 #include "modeldownloader.h"
+#include "globalhotkey.h"
+#include "transcriptpreview.h"
 #include <QProgressDialog>
 #include <QDir>
+#include <QKeySequence>
 #ifdef Q_OS_MAC
 #  include "macos_utils.h"
 #endif
@@ -95,6 +98,8 @@ MainWindow::MainWindow(QTranslator* startupTranslator, QWidget* parent)
                                      m_persist.value("inject/mode", 0).toInt());
     m_settings.injectPartials  = m_persist.value("inject/partials",  false).toBool();
     m_settings.autoFormat      = m_persist.value("inject/autoFormat", true).toBool();
+    m_settings.hotkey          = m_persist.value("hotkey/sequence",   "").toString();
+    m_settings.hotkeyPushToTalk= m_persist.value("hotkey/pushToTalk", false).toBool();
     m_settings.language        = m_persist.value("language",          "en").toString();
     m_settings.edgeLock        = static_cast<EdgeLock>(m_persist.value("window/edgeLock", 0).toInt());
     m_settings.edgeHide        = m_persist.value("window/edgeHide", false).toBool();
@@ -134,6 +139,7 @@ MainWindow::MainWindow(QTranslator* startupTranslator, QWidget* parent)
     loadWindowSettings();
     initAudio();
     initStt();
+    setupHotkey();
 
     // If launch-on-startup is enabled, make sure the OS registration still
     // exists and points at the current executable (self-heals after updates).
@@ -269,6 +275,27 @@ void MainWindow::buildUi()
     tbLayout->addWidget(m_titleLabel);
     tbLayout->addStretch(1);  // always pushes the action buttons to the right
 
+    // Primary "Dictate" toggle — starts/stops the capture → STT → inject
+    // pipeline.  The checkable button swaps the mic icon via QIcon On/Off states.
+    QIcon micIcon;
+    micIcon.addFile(":/icons/mic_off.svg", QSize(18, 18), QIcon::Normal, QIcon::Off);
+    micIcon.addFile(":/icons/mic_on.svg",  QSize(18, 18), QIcon::Normal, QIcon::On);
+    m_dictateBtn = new QPushButton;
+    m_dictateBtn->setCheckable(true);
+    m_dictateBtn->setIcon(micIcon);
+    m_dictateBtn->setIconSize(QSize(18, 18));
+    m_dictateBtn->setFixedSize(28, 24);
+    m_dictateBtn->setEnabled(false);   // enabled once the speech model is ready
+    m_dictateBtn->setToolTip(tr("Loading speech model…"));
+    m_dictateBtn->setStyleSheet(
+        "QPushButton { background:#3A3A3A; border:1px solid #FFA600; border-radius:3px; }"
+        "QPushButton:hover { background:#4A4A4A; }"
+        "QPushButton:checked { background:#4D3300; }"
+        "QPushButton:disabled { border:1px solid #555; }"
+    );
+    connect(m_dictateBtn, &QPushButton::toggled, this, &MainWindow::onDictateToggled);
+    tbLayout->addWidget(m_dictateBtn);
+
     // STT status indicator — a small coloured dot with a tooltip carrying the
     // current state (model/microphone status surfaced in the toolbar).
     m_statusDot = new QLabel;
@@ -327,12 +354,29 @@ void MainWindow::buildTray()
     );
     m_showAct = m_trayMenu->addAction(tr("Show / Hide"));
     m_trayMenu->addSeparator();
+    m_dictateAct = m_trayMenu->addAction(tr("Start Dictation"));
+    m_dictateAct->setEnabled(false);   // until the model is ready
+    m_pauseAct = m_trayMenu->addAction(tr("Pause Injecting"));
+    m_pauseAct->setEnabled(false);     // only meaningful while dictating
+    m_undoAct = m_trayMenu->addAction(tr("Undo Last Injection"));
+    m_undoAct->setEnabled(false);
+    m_trayMenu->addSeparator();
+    m_settingsAct = m_trayMenu->addAction(tr("Settings…"));
     m_quitAct = m_trayMenu->addAction(tr("Quit TrackType"));
 
     connect(m_showAct, &QAction::triggered, this, [this](){
         setVisible(!isVisible());
         if (isVisible()) raise();
     });
+    // Mirror the toolbar toggle: triggering the tray action flips the button,
+    // which drives the whole pipeline through onDictateToggled().
+    connect(m_dictateAct, &QAction::triggered, this, [this](){
+        if (m_dictateBtn && m_dictateBtn->isEnabled())
+            m_dictateBtn->toggle();
+    });
+    connect(m_pauseAct,    &QAction::triggered, this, &MainWindow::togglePause);
+    connect(m_undoAct,     &QAction::triggered, this, &MainWindow::undoLastInjection);
+    connect(m_settingsAct, &QAction::triggered, this, &MainWindow::onSettingsClicked);
     connect(m_quitAct, &QAction::triggered, qApp, &QApplication::quit);
     connect(m_tray, &QSystemTrayIcon::activated, this, &MainWindow::onTrayActivated);
 
@@ -342,23 +386,28 @@ void MainWindow::buildTray()
 
 void MainWindow::initAudio()
 {
-    // Capture starts at launch so the toolbar meter shows the mic is live and the
-    // PCM stream can feed the recognizer.
+    // The microphone is opened only while dictating (toggled on), not at launch.
     m_audio = new AudioCapture(this);
     m_audio->setInputDevice(m_settings.inputDevice);
     if (m_levelMeter)
         connect(m_audio, &AudioCapture::levelChanged,
                 m_levelMeter, &LevelMeter::setLevel);
-    // Surface microphone problems in the toolbar/tray, not just the log.
+    // Surface microphone problems in the toolbar/tray and drop out of dictation.
     connect(m_audio, &AudioCapture::captureError, this, [this](const QString& msg){
         qWarning("TrackType audio error: %s", qUtf8Printable(msg));
+        if (m_dictateBtn && m_dictateBtn->isChecked()) {
+            QSignalBlocker block(m_dictateBtn);   // avoid re-entering onDictateToggled
+            m_dictateBtn->setChecked(false);
+        }
+        if (m_stt) m_stt->stop();
         setSttStatus(SttState::Error, msg);
     });
-    m_audio->start();
 }
 
 void MainWindow::initStt()
 {
+    m_preview = new TranscriptPreview(this);
+
     m_stt = new WhisperSttEngine(this);
     m_stt->setLanguage(m_settings.sttLanguage);
 
@@ -369,11 +418,16 @@ void MainWindow::initStt()
         connect(m_audio, &AudioCapture::bufferReady,
                 m_stt, &WhisperSttEngine::feedAudio);
 
-    // Begin a recognition session as soon as the model is ready.
+    // Model ready → enable the Dictate toggle (recognition starts on demand).
     connect(m_stt, &SttEngine::modelLoaded, this, [this]{
-        qInfo("TrackType STT: model loaded — starting recognition.");
-        m_stt->start();
-        setSttStatus(SttState::Active, tr("Listening"));
+        qInfo("TrackType STT: model loaded — ready to dictate.");
+        if (m_dictateBtn) {
+            m_dictateBtn->setEnabled(true);
+            m_dictateBtn->setToolTip(tr("Start dictation"));
+        }
+        if (m_dictateAct) m_dictateAct->setEnabled(true);
+        if (!m_dictateBtn || !m_dictateBtn->isChecked())
+            setSttStatus(SttState::Idle, tr("Ready to dictate"));
     });
 
     // Recognized text → typed into the focused window (and echoed to the log).
@@ -449,10 +503,13 @@ void MainWindow::setSttStatus(SttState state, const QString& text)
     if (m_statusDot) {
         QString color;
         switch (state) {
-            case SttState::Idle:   color = "#888888"; break;
-            case SttState::Busy:   color = "#FFA600"; break;  // accent orange
-            case SttState::Active: color = "#3FB950"; break;  // green
-            case SttState::Error:  color = "#CC3333"; break;  // red
+            case SttState::Idle:        color = "#888888"; break;  // grey
+            case SttState::Busy:        color = "#FFA600"; break;  // accent orange
+            case SttState::Listening:   color = "#3FB950"; break;  // green
+            case SttState::Transcribing:color = "#3B82F6"; break;  // blue
+            case SttState::Injecting:   color = "#FFA600"; break;  // accent orange
+            case SttState::Paused:      color = "#E3B341"; break;  // amber
+            case SttState::Error:       color = "#CC3333"; break;  // red
         }
         m_statusDot->setStyleSheet(
             QString("background:%1; border-radius:5px;").arg(color));
@@ -479,12 +536,19 @@ void MainWindow::onSttPartial(const QString& raw)
 {
     qInfo("TrackType STT (partial) > %s", qUtf8Printable(raw));
 
-    // Live partials only in simulated-keystroke mode (paste cannot retract).
-    if (!m_settings.injectPartials
+    // Always preview the would-be-typed text near the toolbar.
+    const QString shown = m_normalizer.previewPartial(raw);
+    if (m_preview)
+        m_preview->showText(shown, frameGeometry());
+    if (!m_paused)
+        setSttStatus(SttState::Transcribing, tr("Transcribing…"));
+
+    // Live keystroke injection of partials is opt-in, Type-mode only, not paused.
+    if (m_paused
+        || !m_settings.injectPartials
         || m_settings.injectionMode != InjectionMode::Type)
         return;
 
-    const QString shown = m_normalizer.previewPartial(raw);
     if (m_pendingPartialLen > 0)
         TextInjector::sendBackspaces(m_pendingPartialLen);
     TextInjector::typeText(shown);
@@ -495,14 +559,129 @@ void MainWindow::onSttFinal(const QString& raw)
 {
     qInfo("TrackType STT > %s", qUtf8Printable(raw));
 
-    // Retract the live partial (if any) before committing the finalized text.
+    if (m_preview)
+        m_preview->hide();   // committed → drop the preview
+
+    // Retract any live partial before committing the finalized text.
     if (m_pendingPartialLen > 0) {
         TextInjector::sendBackspaces(m_pendingPartialLen);
         m_pendingPartialLen = 0;
     }
+
     const QString out = m_normalizer.normalize(raw);
-    if (!out.isEmpty())
+
+    if (m_paused) {
+        // Engine stays warm but nothing is typed while paused.
+        return;
+    }
+    if (!out.isEmpty()) {
         TextInjector::typeText(out);
+        m_lastInjectedLen = int(out.size());
+        if (m_undoAct) m_undoAct->setEnabled(true);
+        setSttStatus(SttState::Injecting, tr("Injecting…"));
+        // Fall back to the listening state shortly after.
+        QTimer::singleShot(150, this, [this]{
+            if (m_dictateBtn && m_dictateBtn->isChecked() && !m_paused)
+                setSttStatus(SttState::Listening, tr("Listening"));
+        });
+    }
+}
+
+void MainWindow::onDictateToggled(bool on)
+{
+    if (on) {
+        if (!m_stt || !m_stt->isModelLoaded()) {
+            QSignalBlocker block(m_dictateBtn);   // button is normally disabled here
+            m_dictateBtn->setChecked(false);
+            return;
+        }
+        // Fresh session: reset formatting + partial/undo bookkeeping + pause.
+        m_normalizer.reset();
+        m_pendingPartialLen = 0;
+        m_paused = false;
+
+        m_audio->start();                 // open the mic
+        if (!m_audio->isCapturing())      // captureError already reverted the toggle
+            return;
+        m_stt->start();                   // begin recognizing → inject finals/partials
+
+        playCue();
+        m_dictateBtn->setToolTip(tr("Stop dictation"));
+        if (m_dictateAct) m_dictateAct->setText(tr("Stop Dictation"));
+        if (m_pauseAct) { m_pauseAct->setEnabled(true); m_pauseAct->setText(tr("Pause Injecting")); }
+        setSttStatus(SttState::Listening, tr("Listening"));
+    } else {
+        if (m_stt)   m_stt->stop();
+        if (m_audio) m_audio->stop();
+        m_pendingPartialLen = 0;
+        m_paused = false;
+        if (m_preview) m_preview->hide();
+
+        playCue();
+        m_dictateBtn->setToolTip(tr("Start dictation"));
+        if (m_dictateAct) m_dictateAct->setText(tr("Start Dictation"));
+        if (m_pauseAct)   m_pauseAct->setEnabled(false);
+        setSttStatus(SttState::Idle, tr("Ready to dictate"));
+    }
+}
+
+void MainWindow::setupHotkey()
+{
+    if (!m_hotkey) {
+        m_hotkey = new GlobalHotkey(this);
+        connect(m_hotkey, &GlobalHotkey::pressed,  this, &MainWindow::onHotkeyPressed);
+        connect(m_hotkey, &GlobalHotkey::released, this, &MainWindow::onHotkeyReleased);
+    }
+    m_hotkey->setShortcut(QKeySequence(m_settings.hotkey));
+}
+
+void MainWindow::onHotkeyPressed()
+{
+    if (!m_dictateBtn || !m_dictateBtn->isEnabled())
+        return;
+    if (m_settings.hotkeyPushToTalk) {
+        if (!m_dictateBtn->isChecked())
+            m_dictateBtn->setChecked(true);   // start while held
+    } else {
+        m_dictateBtn->toggle();               // press toggles
+    }
+}
+
+void MainWindow::onHotkeyReleased()
+{
+    // Only push-to-talk reacts to release (toggle ignores it; on Windows the
+    // release fires immediately, so PTT there behaves like toggle).
+    if (m_settings.hotkeyPushToTalk && m_dictateBtn && m_dictateBtn->isChecked())
+        m_dictateBtn->setChecked(false);
+}
+
+void MainWindow::togglePause()
+{
+    if (!m_dictateBtn || !m_dictateBtn->isChecked())
+        return;   // pause only matters during an active session
+    m_paused = !m_paused;
+    if (m_preview && m_paused) m_preview->hide();
+    if (m_pauseAct)
+        m_pauseAct->setText(m_paused ? tr("Resume Injecting") : tr("Pause Injecting"));
+    setSttStatus(m_paused ? SttState::Paused : SttState::Listening,
+                 m_paused ? tr("Paused (engine warm)") : tr("Listening"));
+}
+
+void MainWindow::undoLastInjection()
+{
+    if (m_lastInjectedLen <= 0)
+        return;
+    TextInjector::sendBackspaces(m_lastInjectedLen);
+    m_lastInjectedLen = 0;
+    if (m_undoAct) m_undoAct->setEnabled(false);
+}
+
+void MainWindow::playCue()
+{
+#ifdef HAVE_MULTIMEDIA
+    if (m_settings.audioFeedback && m_clickSound)
+        m_clickSound->play();
+#endif
 }
 
 // ─── Resize / drag the frameless window ──────────────────────────────────
@@ -912,6 +1091,8 @@ void MainWindow::applySettings(const AppSettings& s)
     m_persist.setValue("inject/mode",        int(s.injectionMode));
     m_persist.setValue("inject/partials",    s.injectPartials);
     m_persist.setValue("inject/autoFormat",  s.autoFormat);
+    m_persist.setValue("hotkey/sequence",    s.hotkey);
+    m_persist.setValue("hotkey/pushToTalk",  s.hotkeyPushToTalk);
     m_persist.setValue("language",           s.language);
 
     // Switch the live capture to the chosen microphone (restarts capture if the
@@ -922,8 +1103,9 @@ void MainWindow::applySettings(const AppSettings& s)
             m_audio->start();
     }
 
-    // Injection mode / formatting take effect immediately.
+    // Injection mode / formatting and the global hotkey take effect immediately.
     applyInjectionSettings();
+    setupHotkey();
 
     // Apply STT changes: language is cheap; a model change re-runs the
     // ensure/download/reload flow.
@@ -1007,5 +1189,12 @@ void MainWindow::retranslateUi()
                            : tr("Close application"));
     if (m_tray)        m_tray->setToolTip(tr("TrackType Virtual Mouse"));
     if (m_showAct)     m_showAct->setText(tr("Show / Hide"));
+    const bool dictating = m_dictateBtn && m_dictateBtn->isChecked();
+    if (m_dictateAct)  m_dictateAct->setText(dictating ? tr("Stop Dictation")
+                                                       : tr("Start Dictation"));
+    if (m_pauseAct)    m_pauseAct->setText(m_paused ? tr("Resume Injecting")
+                                                    : tr("Pause Injecting"));
+    if (m_undoAct)     m_undoAct->setText(tr("Undo Last Injection"));
+    if (m_settingsAct) m_settingsAct->setText(tr("Settings…"));
     if (m_quitAct)     m_quitAct->setText(tr("Quit TrackType"));
 }

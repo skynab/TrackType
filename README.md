@@ -52,6 +52,13 @@ result on the clipboard and synthesizes Ctrl/Cmd+V. Use it where per-character
 injection is unreliable (native Wayland, some Electron/Java apps). The previous
 clipboard contents are restored shortly after each paste.
 
+**Global hotkey** (Settings → *Dictation hotkey*) toggles dictation from any app
+via a system-wide shortcut, with an optional push-to-talk (hold) mode. It uses
+`RegisterHotKey` (Windows), Carbon `RegisterEventHotKey` (macOS), and `XGrabKey`
+(Linux, X11/XWayland — pure Wayland has no global-hotkey API). Note: on Windows,
+`RegisterHotKey` reports only key-press, so push-to-talk there behaves like
+toggle.
+
 ## Build
 
 ```bash

@@ -21,4 +21,20 @@ void macSendBackspaces(int count);
 
 // Synthesize Cmd+V (the clipboard-paste fallback shortcut).
 void macSendPasteShortcut();
+
+// ── Global hotkey (Carbon RegisterEventHotKey) ─────────────────────────────
+// Isolated here so Carbon headers stay out of the cross-platform GlobalHotkey.
+typedef void (*MacHotkeyCallback)(bool pressed, void* userData);
+
+// Register a global hotkey (mac virtual keyCode + Carbon modifier mask).  Returns
+// an opaque handle, or nullptr on failure.  `cb` is invoked on the main thread.
+void* macRegisterHotkey(unsigned int keyCode, unsigned int modifiers,
+                        MacHotkeyCallback cb, void* userData);
+void  macUnregisterHotkey(void* handle);
+
+// Carbon modifier-mask constants (so callers needn't include Carbon).
+unsigned int macCmdKey();
+unsigned int macOptionKey();
+unsigned int macControlKey();
+unsigned int macShiftKey();
 #endif
