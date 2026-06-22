@@ -24,6 +24,7 @@ public:
     void loadModel(const QString& modelPath) override;
     bool isModelLoaded() const override { return m_modelLoaded.load(); }
     bool isRunning() const override     { return m_running.load(); }
+    void setLanguage(const QString& lang) override;
 
 public slots:
     void start() override;
@@ -34,12 +35,14 @@ signals:
     // Internal: marshalled to the worker thread via queued connections.
     void requestLoadModel(const QString& modelPath);
     void requestProcess(const QByteArray& pcm);
+    void requestSetLanguage(const QString& lang);
 
 private:
-    // Cap on in-flight chunks so a recognizer slower than real time cannot grow
-    // an unbounded backlog — excess chunks are dropped (this is a live STT, not
-    // a transcription job).
-    static constexpr int kMaxQueued = 4;
+    // Cap on in-flight buffers so a recognizer slower than real time cannot grow
+    // an unbounded backlog — excess buffers are dropped (this is a live STT, not
+    // a transcription job).  Most buffers are cheap (VAD only); only periodic
+    // decodes are heavy, so the cap is generous to ride out decode bursts.
+    static constexpr int kMaxQueued = 32;
 
     QThread*          m_thread = nullptr;
     WhisperWorker*    m_worker = nullptr;

@@ -1,5 +1,6 @@
 #include "settingsdialog.h"
 #include "audiocapture.h"
+#include "modelmanager.h"
 #include "translations/tsparser.h"
 #include <QApplication>
 #include <QEvent>
@@ -220,6 +221,9 @@ void SettingsDialog::retranslateUi()
     m_chkAudio->setText(tr("Audio feedback"));
     m_lblInputDevice->setText(tr("Microphone:"));
     m_cmbInputDevice->setItemText(0, tr("System default"));
+    m_lblSttModel->setText(tr("Speech model:"));
+    m_lblSttLanguage->setText(tr("Speech language:"));
+    m_cmbSttLanguage->setItemText(0, tr("Auto-detect"));
     m_lblOpacity->setText(tr("Opacity:"));
     m_lblLanguage->setText(tr("Language:"));
     m_resetBtn->setText(tr("Reset to Defaults"));
@@ -335,6 +339,44 @@ void SettingsDialog::buildUi()
         m_cmbInputDevice->addItem(label, dev.id);
     }
 
+    // Speech-to-text model selector (from the download catalog).
+    m_lblSttModel = new QLabel(tr("Speech model:"));
+    m_cmbSttModel = new QComboBox;
+    m_cmbSttModel->setSizeAdjustPolicy(QComboBox::AdjustToContents);
+    m_cmbSttModel->setMinimumWidth(130);
+    for (const ModelInfo& mi : ModelManager::catalog())
+        m_cmbSttModel->addItem(mi.label, mi.name);
+
+    // Speech recognition language.  Only meaningful for multilingual models, so
+    // it is disabled (forced to English) when an English-only model is selected.
+    m_lblSttLanguage = new QLabel(tr("Speech language:"));
+    m_cmbSttLanguage = new QComboBox;
+    m_cmbSttLanguage->setSizeAdjustPolicy(QComboBox::AdjustToContents);
+    m_cmbSttLanguage->setMinimumWidth(130);
+    m_cmbSttLanguage->addItem(tr("Auto-detect"), "auto");
+    m_cmbSttLanguage->addItem("English",    "en");
+    m_cmbSttLanguage->addItem("Français",   "fr");
+    m_cmbSttLanguage->addItem("Español",    "es");
+    m_cmbSttLanguage->addItem("Deutsch",    "de");
+    m_cmbSttLanguage->addItem("Italiano",   "it");
+    m_cmbSttLanguage->addItem("Português",  "pt");
+    m_cmbSttLanguage->addItem("Русский",    "ru");
+    m_cmbSttLanguage->addItem("中文",        "zh");
+    m_cmbSttLanguage->addItem("日本語",      "ja");
+    m_cmbSttLanguage->addItem("한국어",      "ko");
+
+    // Disable the language picker for English-only (.en) models.
+    connect(m_cmbSttModel, QOverload<int>::of(&QComboBox::currentIndexChanged),
+            this, [this](int){
+        const ModelInfo mi = ModelManager::modelInfo(
+            m_cmbSttModel->currentData().toString());
+        m_cmbSttLanguage->setEnabled(mi.multilingual);
+        if (!mi.multilingual) {
+            const int en = m_cmbSttLanguage->findData("en");
+            if (en >= 0) m_cmbSttLanguage->setCurrentIndex(en);
+        }
+    });
+
     // Language names are shown in their native script — intentionally not tr()
     m_cmbLanguage = new QComboBox;
     m_cmbLanguage->setSizeAdjustPolicy(QComboBox::AdjustToContents);
@@ -367,6 +409,8 @@ void SettingsDialog::buildUi()
     wfl->addRow(m_chkLaunchOnStartup);
     wfl->addRow(m_chkAudio);
     wfl->addRow(m_lblInputDevice, m_cmbInputDevice);
+    wfl->addRow(m_lblSttModel,    m_cmbSttModel);
+    wfl->addRow(m_lblSttLanguage, m_cmbSttLanguage);
     wfl->addRow(m_lblLanguage,  m_cmbLanguage);
 
 #ifdef Q_OS_MAC
@@ -528,6 +572,15 @@ void SettingsDialog::loadFrom(const AppSettings& s)
     const int devIdx = m_cmbInputDevice->findData(s.inputDevice);
     m_cmbInputDevice->setCurrentIndex(devIdx >= 0 ? devIdx : 0);
 
+    const int modIdx = m_cmbSttModel->findData(s.sttModel);
+    m_cmbSttModel->setCurrentIndex(modIdx >= 0 ? modIdx : 0);
+
+    const ModelInfo mi = ModelManager::modelInfo(s.sttModel);
+    m_cmbSttLanguage->setEnabled(mi.multilingual);
+    const int langIdx = m_cmbSttLanguage->findData(
+        mi.multilingual ? s.sttLanguage : QStringLiteral("en"));
+    m_cmbSttLanguage->setCurrentIndex(langIdx >= 0 ? langIdx : 0);
+
     for (int i = 0; i < m_cmbLanguage->count(); ++i) {
         if (m_cmbLanguage->itemData(i).toString() == s.language) {
             m_cmbLanguage->setCurrentIndex(i);
@@ -549,6 +602,11 @@ AppSettings SettingsDialog::readUi() const
     s.launchOnStartup  = m_chkLaunchOnStartup->isChecked();
     s.audioFeedback    = m_chkAudio->isChecked();
     s.inputDevice      = m_cmbInputDevice->currentData().toString();
+    s.sttModel         = m_cmbSttModel->currentData().toString();
+    // English-only models pin the language to "en" (the picker is disabled).
+    s.sttLanguage      = m_cmbSttLanguage->isEnabled()
+        ? m_cmbSttLanguage->currentData().toString()
+        : QStringLiteral("en");
     s.language         = m_cmbLanguage->currentData().toString();
     return s;
 }

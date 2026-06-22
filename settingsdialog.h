@@ -25,6 +25,11 @@ struct AppSettings {
     // Capture microphone: persisted AudioCapture device id ("" = system default)
     QString inputDevice;
 
+    // Speech-to-text: model file (catalog key) and recognition language
+    // (whisper code such as "en"/"fr", or "auto").
+    QString sttModel    = "ggml-base.en.bin";
+    QString sttLanguage = "en";
+
     // Language (ISO code: "en", "fr", "es", "zh_CN", "ja", "ko", …)
     QString language = "en";
 
@@ -88,6 +93,10 @@ private:
     QCheckBox*   m_chkAudio;
     QLabel*      m_lblInputDevice = nullptr;
     QComboBox*   m_cmbInputDevice = nullptr;
+    QLabel*      m_lblSttModel    = nullptr;
+    QComboBox*   m_cmbSttModel    = nullptr;
+    QLabel*      m_lblSttLanguage = nullptr;
+    QComboBox*   m_cmbSttLanguage = nullptr;
     QComboBox*   m_cmbLanguage;
 
     // Edge lock

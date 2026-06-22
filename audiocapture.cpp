@@ -105,6 +105,7 @@ void AudioCapture::start()
     resolveFormatAndDevice();
     if (m_device.isNull()) {
         qWarning("AudioCapture: no audio input device available.");
+        emit captureError(tr("No microphone found."));
         return;
     }
 
@@ -115,6 +116,7 @@ void AudioCapture::start()
         qWarning("AudioCapture: failed to start capture (state %d).",
                  int(m_source->state()));
         teardown();
+        emit captureError(tr("Could not open the selected microphone."));
         return;
     }
     connect(m_io, &QIODevice::readyRead, this, [this]{ onReadyRead(); });

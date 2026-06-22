@@ -88,6 +88,8 @@ MainWindow::MainWindow(QTranslator* startupTranslator, QWidget* parent)
     m_settings.launchOnStartup = m_persist.value("window/launchOnStartup",  false).toBool();
     m_settings.audioFeedback   = m_persist.value("audio/enabled",    false).toBool();
     m_settings.inputDevice     = m_persist.value("audio/inputDevice",  "").toString();
+    m_settings.sttModel        = m_persist.value("stt/model", "ggml-base.en.bin").toString();
+    m_settings.sttLanguage     = m_persist.value("stt/language",     "en").toString();
     m_settings.language        = m_persist.value("language",          "en").toString();
     m_settings.edgeLock        = static_cast<EdgeLock>(m_persist.value("window/edgeLock", 0).toInt());
     m_settings.edgeHide        = m_persist.value("window/edgeHide", false).toBool();
@@ -262,6 +264,12 @@ void MainWindow::buildUi()
     tbLayout->addWidget(m_titleLabel);
     tbLayout->addStretch(1);  // always pushes the action buttons to the right
 
+    // STT status indicator — a small coloured dot with a tooltip carrying the
+    // current state (model/microphone status surfaced in the toolbar).
+    m_statusDot = new QLabel;
+    m_statusDot->setFixedSize(10, 10);
+    tbLayout->addWidget(m_statusDot);
+
     // Microphone input-level meter — reuses the app-wide orange QProgressBar
     // style (BASE_STYLE) so it matches the look of the old dwell countdown.
     m_levelMeter = new LevelMeter;
@@ -329,40 +337,53 @@ void MainWindow::buildTray()
 
 void MainWindow::initAudio()
 {
-    // Capture starts at launch so the toolbar meter shows the mic is live; the
-    // captured PCM (raw buffers + STT windows) is published for the speech-to-
-    // text pipeline added in a later step.
+    // Capture starts at launch so the toolbar meter shows the mic is live and the
+    // PCM stream can feed the recognizer.
     m_audio = new AudioCapture(this);
     m_audio->setInputDevice(m_settings.inputDevice);
     if (m_levelMeter)
         connect(m_audio, &AudioCapture::levelChanged,
                 m_levelMeter, &LevelMeter::setLevel);
+    // Surface microphone problems in the toolbar/tray, not just the log.
+    connect(m_audio, &AudioCapture::captureError, this, [this](const QString& msg){
+        qWarning("TrackType audio error: %s", qUtf8Printable(msg));
+        setSttStatus(SttState::Error, msg);
+    });
     m_audio->start();
 }
 
 void MainWindow::initStt()
 {
     m_stt = new WhisperSttEngine(this);
+    m_stt->setLanguage(m_settings.sttLanguage);
 
-    // Feed the fixed-size capture windows straight into the recognizer.
+    // Feed the contiguous capture stream into the recognizer; its VAD segments
+    // utterances and decides when to finalize (the chunker's overlapping windows
+    // are unsuitable for accumulation).
     if (m_audio)
-        connect(m_audio, &AudioCapture::chunkReady,
+        connect(m_audio, &AudioCapture::bufferReady,
                 m_stt, &WhisperSttEngine::feedAudio);
 
     // Begin a recognition session as soon as the model is ready.
     connect(m_stt, &SttEngine::modelLoaded, this, [this]{
         qInfo("TrackType STT: model loaded — starting recognition.");
         m_stt->start();
+        setSttStatus(SttState::Active, tr("Listening"));
     });
 
-    // For now (no text-injection layer yet) just surface results to the console
-    // so end-to-end recognition can be validated.
+    // Live partials + finalized text → console (no text-injection layer yet).
+    connect(m_stt, &SttEngine::partialTranscript, this, [](const QString& text){
+        qInfo("TrackType STT (partial) > %s", qUtf8Printable(text));
+    });
     connect(m_stt, &SttEngine::finalTranscript, this, [](const QString& text){
         qInfo("TrackType STT > %s", qUtf8Printable(text));
     });
-    connect(m_stt, &SttEngine::errorOccurred, this, [](const QString& msg){
+    connect(m_stt, &SttEngine::errorOccurred, this, [this](const QString& msg){
         qWarning("TrackType STT error: %s", qUtf8Printable(msg));
+        setSttStatus(SttState::Error, msg);
     });
+
+    setSttStatus(SttState::Busy, tr("Starting speech recognition…"));
 
     // Defer the model check/download until the event loop is running so the main
     // window is visible before any modal download dialog appears.
@@ -371,13 +392,17 @@ void MainWindow::initStt()
 
 void MainWindow::ensureModelThenStart()
 {
-    const QString path = ModelManager::modelFilePath();
-    if (ModelManager::isModelAvailable()) {
+    const ModelInfo mi   = ModelManager::modelInfo(m_settings.sttModel);
+    const QString    path = ModelManager::modelFilePath(mi.name);
+
+    if (ModelManager::isModelAvailable(mi.name)) {
+        setSttStatus(SttState::Busy, tr("Loading speech model…"));
         m_stt->loadModel(path);
         return;
     }
 
-    // First run: download the model with a cancelable progress dialog.
+    // First run (or model switch): download with a cancelable progress dialog.
+    setSttStatus(SttState::Busy, tr("Downloading speech model…"));
     QDir().mkpath(ModelManager::modelsDir());
     auto* dl   = new ModelDownloader(this);
     auto* prog = new QProgressDialog(
@@ -403,8 +428,10 @@ void MainWindow::ensureModelThenStart()
         prog->deleteLater();
         dl->deleteLater();
         if (ok) {
+            setSttStatus(SttState::Busy, tr("Loading speech model…"));
             m_stt->loadModel(path);
         } else {
+            setSttStatus(SttState::Error, tr("No speech model"));
             QMessageBox::warning(this, tr("TrackType"),
                 tr("Could not download the speech recognition model:\n%1\n\n"
                    "Dictation will be unavailable until it is downloaded.")
@@ -412,8 +439,29 @@ void MainWindow::ensureModelThenStart()
         }
     });
 
-    dl->start(ModelManager::defaultModelUrl(), path,
-              ModelManager::defaultModelSha256());
+    dl->start(mi.url, path, mi.sha256);
+}
+
+void MainWindow::setSttStatus(SttState state, const QString& text)
+{
+    if (m_statusDot) {
+        QString color;
+        switch (state) {
+            case SttState::Idle:   color = "#888888"; break;
+            case SttState::Busy:   color = "#FFA600"; break;  // accent orange
+            case SttState::Active: color = "#3FB950"; break;  // green
+            case SttState::Error:  color = "#CC3333"; break;  // red
+        }
+        m_statusDot->setStyleSheet(
+            QString("background:%1; border-radius:5px;").arg(color));
+        m_statusDot->setToolTip(text);
+    }
+    if (m_tray) {
+        m_tray->setToolTip(tr("TrackType — %1").arg(text));
+        if (state == SttState::Error)
+            m_tray->showMessage(tr("TrackType"), text,
+                                QSystemTrayIcon::Warning, 4000);
+    }
 }
 
 // ─── Resize / drag the frameless window ──────────────────────────────────
@@ -785,7 +833,9 @@ void MainWindow::syncLaunchOnStartup()
 
 void MainWindow::applySettings(const AppSettings& s)
 {
-    const QString oldLanguage = m_settings.language;
+    const QString oldLanguage    = m_settings.language;
+    const QString oldSttModel    = m_settings.sttModel;
+    const QString oldSttLanguage = m_settings.sttLanguage;
     m_settings = s;
 
     setWindowOpacity(s.windowOpacity);
@@ -818,6 +868,8 @@ void MainWindow::applySettings(const AppSettings& s)
     setLaunchOnStartup(s.launchOnStartup);
     m_persist.setValue("audio/enabled",      s.audioFeedback);
     m_persist.setValue("audio/inputDevice",  s.inputDevice);
+    m_persist.setValue("stt/model",          s.sttModel);
+    m_persist.setValue("stt/language",       s.sttLanguage);
     m_persist.setValue("language",           s.language);
 
     // Switch the live capture to the chosen microphone (restarts capture if the
@@ -826,6 +878,15 @@ void MainWindow::applySettings(const AppSettings& s)
         m_audio->setInputDevice(s.inputDevice);
         if (!m_audio->isCapturing())
             m_audio->start();
+    }
+
+    // Apply STT changes: language is cheap; a model change re-runs the
+    // ensure/download/reload flow.
+    if (m_stt) {
+        if (s.sttLanguage != oldSttLanguage)
+            m_stt->setLanguage(s.sttLanguage);
+        if (s.sttModel != oldSttModel)
+            ensureModelThenStart();   // m_settings already updated above
     }
     m_persist.setValue("window/edgeLock",    static_cast<int>(s.edgeLock));
     m_persist.setValue("window/edgeHide",    s.edgeHide);

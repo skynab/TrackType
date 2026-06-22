@@ -130,6 +130,9 @@ signals:
     // State-change notifications.
     void captureStarted();
     void captureStopped();
+    // Capture could not run: no input device, or the device/format could not be
+    // opened.  `message` is human-readable for the UI.
+    void captureError(const QString& message);
 
 private:
     void teardown();

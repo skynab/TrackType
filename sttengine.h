@@ -10,8 +10,10 @@
 //  This is the swap seam between the audio pipeline and a concrete recognizer
 //  (whisper.cpp, Vosk, a cloud API, …).  The capture and UI layers talk only to
 //  this interface, so the backend can be replaced without touching either.  A
-//  typical wiring connects AudioCapture::chunkReady → SttEngine::feedAudio and
+//  typical wiring connects an AudioCapture PCM signal → SttEngine::feedAudio and
 //  SttEngine::partialTranscript/finalTranscript → the text-injection layer.
+//  (A backend that does its own VAD/segmentation prefers the contiguous
+//  bufferReady stream; one that wants fixed windows can use chunkReady.)
 //
 //  Audio contract: feedAudio() expects the same PCM that AudioCapture produces —
 //  mono, 16 kHz, signed 16-bit little-endian (see AudioCapture::kSampleRate /
@@ -42,6 +44,11 @@ public:
 
     // True between a successful start() and the matching stop().
     virtual bool isRunning() const = 0;
+
+    // Set the recognition language (a whisper language code such as "en"/"fr", or
+    // "auto" to detect).  Single-language backends may ignore this.  Default no-op
+    // so this stays optional for the seam.
+    virtual void setLanguage(const QString& lang) { Q_UNUSED(lang); }
 
 public slots:
     // Begin a recognition session.  Requires a loaded model; emits

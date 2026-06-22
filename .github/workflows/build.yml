@@ -56,14 +56,48 @@ jobs:
         run: cmake -B build-tests -DBUILD_TESTS=ON -DCMAKE_BUILD_TYPE=Debug
 
       - name: Build tests
-        # Build only the test targets — they don't link whisper, so this avoids
-        # compiling the vendored whisper.cpp/ggml in the unit-test job.
+        # Fast tests only — they don't link whisper, so this avoids compiling the
+        # vendored whisper.cpp/ggml on every platform.  The whisper integration
+        # test is built/run in a Linux-only step below.
         run: cmake --build build-tests --config Debug --parallel --target tst_placeholder tst_audiocapture
 
       - name: Run tests
         env:
           QT_QPA_PLATFORM: offscreen
-        run: ctest --test-dir build-tests -C Debug --output-on-failure
+        # Exclude the Whisper integration test here; it runs in the Linux step.
+        run: ctest --test-dir build-tests -C Debug -E Whisper --output-on-failure
+
+      # ── Whisper end-to-end integration test (Linux only) ───────────────────────
+      # Compiles whisper once here and runs real recognition against a small model.
+      - name: Cache whisper test model (Linux)
+        if: matrix.name == 'Linux'
+        uses: actions/cache@v4
+        with:
+          path: test-assets
+          key: whisper-test-assets-tiny-en-jfk-v1
+
+      - name: Fetch whisper test assets (Linux)
+        if: matrix.name == 'Linux'
+        run: |
+          mkdir -p test-assets
+          if [ ! -f test-assets/ggml-tiny.en.bin ]; then
+            curl -fL -o test-assets/ggml-tiny.en.bin \
+              https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-tiny.en.bin
+          fi
+          if [ ! -f test-assets/jfk.wav ]; then
+            curl -fL -o test-assets/jfk.wav \
+              https://raw.githubusercontent.com/ggerganov/whisper.cpp/v1.9.1/samples/jfk.wav
+          fi
+
+      - name: Whisper integration test (Linux)
+        if: matrix.name == 'Linux'
+        env:
+          QT_QPA_PLATFORM: offscreen
+          TRACKTYPE_TEST_MODEL: ${{ github.workspace }}/test-assets/ggml-tiny.en.bin
+          TRACKTYPE_TEST_WAV: ${{ github.workspace }}/test-assets/jfk.wav
+        run: |
+          cmake --build build-tests --config Debug --parallel --target tst_whisperengine
+          ctest --test-dir build-tests -C Debug -R Whisper --output-on-failure
 
   build:
     strategy:

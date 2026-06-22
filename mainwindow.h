@@ -54,6 +54,10 @@ private:
     void initAudio();
     void initStt();
     void ensureModelThenStart();
+
+    // STT status surfaced in the toolbar (a coloured dot + tooltip) and tray.
+    enum class SttState { Idle, Busy, Active, Error };
+    void setSttStatus(SttState state, const QString& text);
     void saveWindowSettings();
     void loadWindowSettings();
     void retranslateUi();
@@ -81,6 +85,7 @@ private:
     QPushButton*  m_settingsBtn= nullptr;
     QPushButton*  m_exitBtn    = nullptr;
     LevelMeter*   m_levelMeter = nullptr;
+    QLabel*       m_statusDot  = nullptr;
 
     // ── State ─────────────────────────────────────────────────
     bool        m_dragging     = false;  // window drag in progress
