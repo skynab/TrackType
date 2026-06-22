@@ -12,6 +12,7 @@
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QMouseEvent>
+#include <QCursor>
 #include <QPainter>
 #include <QScreen>
 #include <QGuiApplication>
@@ -90,6 +91,10 @@ MainWindow::MainWindow(QTranslator* startupTranslator, QWidget* parent)
     m_settings.inputDevice     = m_persist.value("audio/inputDevice",  "").toString();
     m_settings.sttModel        = m_persist.value("stt/model", "ggml-base.en.bin").toString();
     m_settings.sttLanguage     = m_persist.value("stt/language",     "en").toString();
+    m_settings.injectionMode   = static_cast<InjectionMode>(
+                                     m_persist.value("inject/mode", 0).toInt());
+    m_settings.injectPartials  = m_persist.value("inject/partials",  false).toBool();
+    m_settings.autoFormat      = m_persist.value("inject/autoFormat", true).toBool();
     m_settings.language        = m_persist.value("language",          "en").toString();
     m_settings.edgeLock        = static_cast<EdgeLock>(m_persist.value("window/edgeLock", 0).toInt());
     m_settings.edgeHide        = m_persist.value("window/edgeHide", false).toBool();
@@ -138,7 +143,7 @@ MainWindow::MainWindow(QTranslator* startupTranslator, QWidget* parent)
 void MainWindow::promptForInputAccessIfNeeded()
 {
 #ifdef Q_OS_LINUX
-    if (ClickInjector::hasInputDeviceAccess())
+    if (TextInjector::hasInputDeviceAccess())
         return;
 
     // Respect a previous "Don't ask again" choice.
@@ -371,18 +376,15 @@ void MainWindow::initStt()
         setSttStatus(SttState::Active, tr("Listening"));
     });
 
-    // Live partials + finalized text → console (no text-injection layer yet).
-    connect(m_stt, &SttEngine::partialTranscript, this, [](const QString& text){
-        qInfo("TrackType STT (partial) > %s", qUtf8Printable(text));
-    });
-    connect(m_stt, &SttEngine::finalTranscript, this, [](const QString& text){
-        qInfo("TrackType STT > %s", qUtf8Printable(text));
-    });
+    // Recognized text → typed into the focused window (and echoed to the log).
+    connect(m_stt, &SttEngine::partialTranscript, this, &MainWindow::onSttPartial);
+    connect(m_stt, &SttEngine::finalTranscript,   this, &MainWindow::onSttFinal);
     connect(m_stt, &SttEngine::errorOccurred, this, [this](const QString& msg){
         qWarning("TrackType STT error: %s", qUtf8Printable(msg));
         setSttStatus(SttState::Error, msg);
     });
 
+    applyInjectionSettings();
     setSttStatus(SttState::Busy, tr("Starting speech recognition…"));
 
     // Defer the model check/download until the event loop is running so the main
@@ -462,6 +464,45 @@ void MainWindow::setSttStatus(SttState state, const QString& text)
             m_tray->showMessage(tr("TrackType"), text,
                                 QSystemTrayIcon::Warning, 4000);
     }
+}
+
+void MainWindow::applyInjectionSettings()
+{
+    TextInjector::setMode(
+        m_settings.injectionMode == InjectionMode::ClipboardPaste
+            ? TextInjector::Mode::ClipboardPaste
+            : TextInjector::Mode::Type);
+    m_normalizer.setEnabled(m_settings.autoFormat);
+}
+
+void MainWindow::onSttPartial(const QString& raw)
+{
+    qInfo("TrackType STT (partial) > %s", qUtf8Printable(raw));
+
+    // Live partials only in simulated-keystroke mode (paste cannot retract).
+    if (!m_settings.injectPartials
+        || m_settings.injectionMode != InjectionMode::Type)
+        return;
+
+    const QString shown = m_normalizer.previewPartial(raw);
+    if (m_pendingPartialLen > 0)
+        TextInjector::sendBackspaces(m_pendingPartialLen);
+    TextInjector::typeText(shown);
+    m_pendingPartialLen = int(shown.size());
+}
+
+void MainWindow::onSttFinal(const QString& raw)
+{
+    qInfo("TrackType STT > %s", qUtf8Printable(raw));
+
+    // Retract the live partial (if any) before committing the finalized text.
+    if (m_pendingPartialLen > 0) {
+        TextInjector::sendBackspaces(m_pendingPartialLen);
+        m_pendingPartialLen = 0;
+    }
+    const QString out = m_normalizer.normalize(raw);
+    if (!out.isEmpty())
+        TextInjector::typeText(out);
 }
 
 // ─── Resize / drag the frameless window ──────────────────────────────────
@@ -649,10 +690,8 @@ void MainWindow::onEdgePoll()
     if (lock == EdgeLock::None) return;
 
     QRect  avail  = QGuiApplication::primaryScreen()->availableGeometry();
-    // Global cursor position for the slide-away/peek detection.  (Currently a
-    // thin wrapper over QCursor::pos(); the Wayland-accurate evdev/XQueryPointer
-    // tracking was removed with the dwell engine.)
-    QPoint cursor = ClickInjector::cursorPos();
+    // Global cursor position for the slide-away/peek detection.
+    QPoint cursor = QCursor::pos();
 
     const int shownX  = (lock == EdgeLock::Left)
         ? avail.left()
@@ -870,6 +909,9 @@ void MainWindow::applySettings(const AppSettings& s)
     m_persist.setValue("audio/inputDevice",  s.inputDevice);
     m_persist.setValue("stt/model",          s.sttModel);
     m_persist.setValue("stt/language",       s.sttLanguage);
+    m_persist.setValue("inject/mode",        int(s.injectionMode));
+    m_persist.setValue("inject/partials",    s.injectPartials);
+    m_persist.setValue("inject/autoFormat",  s.autoFormat);
     m_persist.setValue("language",           s.language);
 
     // Switch the live capture to the chosen microphone (restarts capture if the
@@ -879,6 +921,9 @@ void MainWindow::applySettings(const AppSettings& s)
         if (!m_audio->isCapturing())
             m_audio->start();
     }
+
+    // Injection mode / formatting take effect immediately.
+    applyInjectionSettings();
 
     // Apply STT changes: language is cheap; a model change re-runs the
     // ensure/download/reload flow.

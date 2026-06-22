@@ -33,6 +33,15 @@ target_link_libraries(tst_audiocapture PRIVATE
 
 add_test(NAME AudioCapture COMMAND tst_audiocapture)
 
+# TextNormalizer — pure spacing/capitalization logic (no window, no injection).
+add_executable(tst_textnormalizer
+    tst_textnormalizer.cpp
+    ${CMAKE_SOURCE_DIR}/textnormalizer.cpp
+)
+target_include_directories(tst_textnormalizer PRIVATE ${CMAKE_SOURCE_DIR})
+target_link_libraries(tst_textnormalizer PRIVATE ${QT}::Core ${QT}::Test)
+add_test(NAME TextNormalizer COMMAND tst_textnormalizer)
+
 # Whisper end-to-end integration test.  Links the vendored whisper static lib and
 # compiles the engine directly.  Runs only when TRACKTYPE_TEST_MODEL points at a
 # real model (otherwise it skips), so the binary always builds but inference runs
@@ -40,6 +49,9 @@ add_test(NAME AudioCapture COMMAND tst_audiocapture)
 add_executable(tst_whisperengine
     tst_whisperengine.cpp
     ${CMAKE_SOURCE_DIR}/whisperengine.cpp
+    # SttEngine has Q_OBJECT but no .cpp; list the header so AUTOMOC generates its
+    # moc (it provides the base-class metaobject/signals WhisperSttEngine needs).
+    ${CMAKE_SOURCE_DIR}/sttengine.h
 )
 
 target_include_directories(tst_whisperengine PRIVATE ${CMAKE_SOURCE_DIR})

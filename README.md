@@ -35,6 +35,23 @@ chat window, or anywhere else you can type.
 | macOS | Xcode 13+; grant **Accessibility** permission so TrackType can type into other apps (and **Microphone** permission for dictation) |
 | Linux | `libx11-dev` + `libxtst-dev` (Debian/Ubuntu) or `libX11-devel` + `libXtst-devel` (Fedora/RHEL); X11/XWayland required |
 
+### Text injection & permissions
+
+Recognized speech is typed into whatever window currently has focus
+(`TextInjector`). Backends and their requirements:
+
+| Platform | How text is injected | Requirement / limitation |
+|---|---|---|
+| Windows | `SendInput` with `KEYEVENTF_UNICODE` — layout-independent Unicode | none |
+| macOS | `CGEventKeyboardSetUnicodeString` + `CGEventPost` | **Accessibility permission is required** (System Settings → Privacy & Security → Accessibility). Without it, keystrokes are silently dropped. |
+| Linux (X11 / XWayland) | XTest, remapping a spare keycode per character for full Unicode | works for X11 apps and XWayland clients |
+| Linux (native Wayland) | uinput fallback (ASCII only) — Wayland blocks synthetic XTest input to native clients | for reliable Unicode on Wayland, use **clipboard-paste** mode |
+
+**Clipboard-paste mode** (Settings → *Type text by: Clipboard paste*) puts each
+result on the clipboard and synthesizes Ctrl/Cmd+V. Use it where per-character
+injection is unreliable (native Wayland, some Electron/Java apps). The previous
+clipboard contents are restored shortly after each paste.
+
 ## Build
 
 ```bash
@@ -113,8 +130,8 @@ TrackType/
 ├── installer/            — Windows (WiX), Linux (.desktop, udev, deb) packaging
 ├── main.cpp              — Entry point
 ├── mainwindow.h/cpp      — Floating toolbar UI
-├── clickinjector.h/cpp   — Per-platform input-injection seam (being repurposed
-│                            into the text/keystroke injector)
+├── textinjector.h/cpp    — Cross-platform Unicode text injector (types into the
+│                            focused window: Win SendInput / macOS CGEvent / X11 XTest)
 ├── macos_utils.h/.mm     — macOS window-behaviour helper
 ├── settingsdialog.h/cpp  — Configuration dialog & AppSettings struct
 └── tests/                — Unit tests (ctest)

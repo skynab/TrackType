@@ -61,7 +61,8 @@ set(CMAKE_AUTORCC ON)
 set(SOURCES
     main.cpp
     mainwindow.cpp
-    clickinjector.cpp
+    textinjector.cpp
+    textnormalizer.cpp
     settingsdialog.cpp
     audiocapture.cpp
     levelmeter.cpp
@@ -74,7 +75,8 @@ set(SOURCES
 
 set(HEADERS
     mainwindow.h
-    clickinjector.h
+    textinjector.h
+    textnormalizer.h
     settingsdialog.h
     audiocapture.h
     levelmeter.h

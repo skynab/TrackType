@@ -11,6 +11,9 @@
 
 enum class EdgeLock { None, Left, Right };
 
+// How recognized text is injected into the focused window.
+enum class InjectionMode { Type, ClipboardPaste };
+
 struct AppSettings {
     // Window
     double windowOpacity   = 1.0;
@@ -29,6 +32,11 @@ struct AppSettings {
     // (whisper code such as "en"/"fr", or "auto").
     QString sttModel    = "ggml-base.en.bin";
     QString sttLanguage = "en";
+
+    // Text injection of recognized speech.
+    InjectionMode injectionMode = InjectionMode::Type;
+    bool injectPartials = false;   // type live partials (Type mode) vs. only finals
+    bool autoFormat     = true;    // auto spacing + sentence capitalization
 
     // Language (ISO code: "en", "fr", "es", "zh_CN", "ja", "ko", …)
     QString language = "en";
@@ -97,6 +105,10 @@ private:
     QComboBox*   m_cmbSttModel    = nullptr;
     QLabel*      m_lblSttLanguage = nullptr;
     QComboBox*   m_cmbSttLanguage = nullptr;
+    QLabel*      m_lblInjectMode  = nullptr;
+    QComboBox*   m_cmbInjectMode  = nullptr;
+    QCheckBox*   m_chkInjectPartials = nullptr;
+    QCheckBox*   m_chkAutoFormat     = nullptr;
     QComboBox*   m_cmbLanguage;
 
     // Edge lock

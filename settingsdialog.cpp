@@ -224,6 +224,11 @@ void SettingsDialog::retranslateUi()
     m_lblSttModel->setText(tr("Speech model:"));
     m_lblSttLanguage->setText(tr("Speech language:"));
     m_cmbSttLanguage->setItemText(0, tr("Auto-detect"));
+    m_lblInjectMode->setText(tr("Type text by:"));
+    m_cmbInjectMode->setItemText(0, tr("Simulated keystrokes"));
+    m_cmbInjectMode->setItemText(1, tr("Clipboard paste"));
+    m_chkInjectPartials->setText(tr("Type partial results live"));
+    m_chkAutoFormat->setText(tr("Auto spacing && capitalization"));
     m_lblOpacity->setText(tr("Opacity:"));
     m_lblLanguage->setText(tr("Language:"));
     m_resetBtn->setText(tr("Reset to Defaults"));
@@ -377,6 +382,27 @@ void SettingsDialog::buildUi()
         }
     });
 
+    // Text-injection mode + behaviour.
+    m_lblInjectMode = new QLabel(tr("Type text by:"));
+    m_cmbInjectMode = new QComboBox;
+    m_cmbInjectMode->setSizeAdjustPolicy(QComboBox::AdjustToContents);
+    m_cmbInjectMode->setMinimumWidth(130);
+    m_cmbInjectMode->addItem(tr("Simulated keystrokes"),
+                             int(InjectionMode::Type));
+    m_cmbInjectMode->addItem(tr("Clipboard paste"),
+                             int(InjectionMode::ClipboardPaste));
+    m_chkInjectPartials = new QCheckBox(tr("Type partial results live"));
+    m_chkAutoFormat     = new QCheckBox(tr("Auto spacing && capitalization"));
+
+    // Live partials only make sense with simulated keystrokes (paste cannot
+    // retract); disable the option in clipboard-paste mode.
+    connect(m_cmbInjectMode, QOverload<int>::of(&QComboBox::currentIndexChanged),
+            this, [this](int){
+        const bool typeMode = m_cmbInjectMode->currentData().toInt()
+                              == int(InjectionMode::Type);
+        m_chkInjectPartials->setEnabled(typeMode);
+    });
+
     // Language names are shown in their native script — intentionally not tr()
     m_cmbLanguage = new QComboBox;
     m_cmbLanguage->setSizeAdjustPolicy(QComboBox::AdjustToContents);
@@ -411,6 +437,9 @@ void SettingsDialog::buildUi()
     wfl->addRow(m_lblInputDevice, m_cmbInputDevice);
     wfl->addRow(m_lblSttModel,    m_cmbSttModel);
     wfl->addRow(m_lblSttLanguage, m_cmbSttLanguage);
+    wfl->addRow(m_lblInjectMode,  m_cmbInjectMode);
+    wfl->addRow(m_chkInjectPartials);
+    wfl->addRow(m_chkAutoFormat);
     wfl->addRow(m_lblLanguage,  m_cmbLanguage);
 
 #ifdef Q_OS_MAC
@@ -581,6 +610,12 @@ void SettingsDialog::loadFrom(const AppSettings& s)
         mi.multilingual ? s.sttLanguage : QStringLiteral("en"));
     m_cmbSttLanguage->setCurrentIndex(langIdx >= 0 ? langIdx : 0);
 
+    const int modeIdx = m_cmbInjectMode->findData(int(s.injectionMode));
+    m_cmbInjectMode->setCurrentIndex(modeIdx >= 0 ? modeIdx : 0);
+    m_chkInjectPartials->setChecked(s.injectPartials);
+    m_chkInjectPartials->setEnabled(s.injectionMode == InjectionMode::Type);
+    m_chkAutoFormat->setChecked(s.autoFormat);
+
     for (int i = 0; i < m_cmbLanguage->count(); ++i) {
         if (m_cmbLanguage->itemData(i).toString() == s.language) {
             m_cmbLanguage->setCurrentIndex(i);
@@ -607,6 +642,10 @@ AppSettings SettingsDialog::readUi() const
     s.sttLanguage      = m_cmbSttLanguage->isEnabled()
         ? m_cmbSttLanguage->currentData().toString()
         : QStringLiteral("en");
+    s.injectionMode    = InjectionMode(m_cmbInjectMode->currentData().toInt());
+    s.injectPartials   = m_chkInjectPartials->isChecked()
+                         && (s.injectionMode == InjectionMode::Type);
+    s.autoFormat       = m_chkAutoFormat->isChecked();
     s.language         = m_cmbLanguage->currentData().toString();
     return s;
 }

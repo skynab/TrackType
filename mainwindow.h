@@ -12,7 +12,8 @@
 #  include <QSoundEffect>
 #endif
 #include <QTranslator>
-#include "clickinjector.h"
+#include "textinjector.h"
+#include "textnormalizer.h"
 #include "settingsdialog.h"
 
 class AudioCapture;
@@ -54,6 +55,12 @@ private:
     void initAudio();
     void initStt();
     void ensureModelThenStart();
+
+    // Inject recognized text into the focused window (applies normalization and,
+    // in live-partial mode, retracts the previous partial first).
+    void onSttPartial(const QString& raw);
+    void onSttFinal(const QString& raw);
+    void applyInjectionSettings();
 
     // STT status surfaced in the toolbar (a coloured dot + tooltip) and tray.
     enum class SttState { Idle, Busy, Active, Error };
@@ -103,6 +110,8 @@ private:
     // ── Sub-objects ───────────────────────────────────────────
     AudioCapture*     m_audio      = nullptr;
     WhisperSttEngine* m_stt        = nullptr;
+    TextNormalizer    m_normalizer;          // spacing/capitalization of segments
+    int               m_pendingPartialLen = 0; // chars of the live partial on screen
     QSystemTrayIcon*  m_tray       = nullptr;
     QMenu*            m_trayMenu   = nullptr;
     QAction*          m_showAct    = nullptr;
