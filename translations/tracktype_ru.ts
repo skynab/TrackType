@@ -146,5 +146,6 @@ Please install 'onboard' or 'florence'.</source><translation>Экранная к
     <message><source>Hold to talk (push-to-talk)</source><translation>Удерживать для речи (push-to-talk)</translation></message>
     <message><source>On-Screen Keyboard</source><translation>Экранная клавиатура</translation></message>
     <message><source>Installing on-screen keyboard…</source><translation>Установка экранной клавиатуры…</translation></message>
+    <message><source>Dictation</source><translation>Диктовка</translation></message>
 </context>
 </TS>

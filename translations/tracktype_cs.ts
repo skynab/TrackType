@@ -142,5 +142,6 @@ Nainstalujte prosím 'onboard' nebo 'florence'.</translation></message>
     <message><source>Reset to Defaults</source><translation>Obnovit výchozí</translation></message>
     <message><source>On-Screen Keyboard</source><translation>Klávesnice na obrazovce</translation></message>
     <message><source>Installing on-screen keyboard…</source><translation>Instalace klávesnice na obrazovce…</translation></message>
+    <message><source>Dictation</source><translation>Diktování</translation></message>
 </context>
 </TS>

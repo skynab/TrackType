@@ -15,7 +15,7 @@ int main(int argc, char* argv[])
 
     QApplication app(argc, argv);
     app.setApplicationName("TrackType");
-    app.setApplicationVersion("0.9.2");
+    app.setApplicationVersion("0.9.0");
     app.setOrganizationName("TrackType");
     app.setOrganizationDomain("tracktype.app");
 

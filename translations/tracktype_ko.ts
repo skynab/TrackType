@@ -141,5 +141,6 @@ Please install 'onboard' or 'florence'.</source><translation>화상 키보드를
     <message><source>Reset to Defaults</source><translation>기본값으로 재설정</translation></message>
     <message><source>On-Screen Keyboard</source><translation>화상 키보드</translation></message>
     <message><source>Installing on-screen keyboard…</source><translation>화상 키보드 설치 중…</translation></message>
+    <message><source>Dictation</source><translation>받아쓰기</translation></message>
 </context>
 </TS>

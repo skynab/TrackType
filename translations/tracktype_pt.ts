@@ -146,5 +146,6 @@ Instale 'onboard' ou 'florence'.</translation></message>
     <message><source>Hold to talk (push-to-talk)</source><translation>Segurar para falar (push-to-talk)</translation></message>
     <message><source>On-Screen Keyboard</source><translation>Teclado virtual</translation></message>
     <message><source>Installing on-screen keyboard…</source><translation>Instalando teclado virtual…</translation></message>
+    <message><source>Dictation</source><translation>Ditado</translation></message>
 </context>
 </TS>

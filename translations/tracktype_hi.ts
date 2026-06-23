@@ -146,5 +146,6 @@ Please install 'onboard' or 'florence'.</source><translation>कोई ऑन-�
     <message><source>Hold to talk (push-to-talk)</source><translation>बोलने के लिए दबाए रखें (पुश-टू-टॉक)</translation></message>
     <message><source>On-Screen Keyboard</source><translation>ऑन-स्क्रीन कीबोर्ड</translation></message>
     <message><source>Installing on-screen keyboard…</source><translation>ऑन-स्क्रीन कीबोर्ड इंस्टॉल हो रहा है…</translation></message>
+    <message><source>Dictation</source><translation>श्रुतलेखन</translation></message>
 </context>
 </TS>

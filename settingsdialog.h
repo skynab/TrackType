@@ -7,6 +7,7 @@
 
 QT_BEGIN_NAMESPACE
 class QTableWidget;
+class QTabWidget;
 QT_END_NAMESPACE
 #include <QDialogButtonBox>
 #include <QGroupBox>
@@ -94,9 +95,8 @@ private:
     QTranslator* m_previewTranslator = nullptr;
     QTranslator* m_appTranslator     = nullptr; // borrowed from MainWindow
 
-    // ── Group boxes (titles need retranslation) ───────────────
-    QGroupBox* m_grpWin = nullptr;
-    QGroupBox* m_grpCommands = nullptr;
+    // ── Settings tabs (tab labels need retranslation) ─────────
+    QTabWidget* m_tabs = nullptr;
 
     // Voice-commands editor.
     QTableWidget* m_cmdTable     = nullptr;

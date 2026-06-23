@@ -146,5 +146,6 @@ Please install 'onboard' or 'florence'.</source><translation>কোনো অন
     <message><source>Hold to talk (push-to-talk)</source><translation>কথা বলতে চেপে ধরুন (পুশ-টু-টক)</translation></message>
     <message><source>On-Screen Keyboard</source><translation>অন-স্ক্রিন কীবোর্ড</translation></message>
     <message><source>Installing on-screen keyboard…</source><translation>অন-স্ক্রিন কীবোর্ড ইনস্টল হচ্ছে…</translation></message>
+    <message><source>Dictation</source><translation>শ্রুতিলিখন</translation></message>
 </context>
 </TS>

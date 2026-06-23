@@ -141,5 +141,6 @@ Veuillez installer 'onboard' ou 'florence'.</translation></message>
     <message><source>Reset to Defaults</source><translation>Réinitialiser</translation></message>
     <message><source>On-Screen Keyboard</source><translation>Clavier virtuel</translation></message>
     <message><source>Installing on-screen keyboard…</source><translation>Installation du clavier virtuel…</translation></message>
+    <message><source>Dictation</source><translation>Dictée</translation></message>
 </context>
 </TS>

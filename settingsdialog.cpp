@@ -16,6 +16,7 @@
 #include <QSvgRenderer>
 #include <QMessageBox>
 #include <QTableWidget>
+#include <QTabWidget>
 #include <QHeaderView>
 #include <QProcess>
 #include <QProgressDialog>
@@ -73,6 +74,23 @@ QGroupBox::title {
     left: 8px;
     padding: 0 4px;
 }
+QTabWidget::pane {
+    border: 1px solid #979797;
+    border-radius: 4px;
+    top: -1px;
+}
+QTabBar::tab {
+    background: #1A1A1A;
+    color: #979797;
+    border: 1px solid #555;
+    border-bottom: none;
+    border-top-left-radius: 4px;
+    border-top-right-radius: 4px;
+    padding: 6px 14px;
+    margin-right: 2px;
+}
+QTabBar::tab:selected { background: #2D2D2D; color: #FFA600; }
+QTabBar::tab:hover    { color: #FFB833; }
 QLabel  { color: #979797; }
 QCheckBox { color: #979797; spacing: 6px; }
 QCheckBox::indicator {
@@ -237,8 +255,11 @@ void SettingsDialog::retranslateUi()
     m_btnAccessibility->setText(tr("Open Accessibility Settings…"));
 #endif
 
-    m_grpWin->setTitle(tr("Window"));
-    m_grpCommands->setTitle(tr("Voice commands"));
+    if (m_tabs) {
+        m_tabs->setTabText(0, tr("Window"));
+        m_tabs->setTabText(1, tr("Dictation"));
+        m_tabs->setTabText(2, tr("Voice commands"));
+    }
     m_cmdTable->setHorizontalHeaderLabels({tr("Spoken phrase"), tr("Output")});
     m_btnAddCmd->setText(tr("Add"));
     m_btnRemoveCmd->setText(tr("Remove"));
@@ -318,9 +339,9 @@ void SettingsDialog::buildUi()
 #ifdef BUILD_NUMBER
 #  define TC_STR_(x) #x
 #  define TC_STR(x) TC_STR_(x)
-    auto* versionLbl = new QLabel("Version 0.9.2 (build " TC_STR(BUILD_NUMBER) ")");
+    auto* versionLbl = new QLabel("Version 0.9.0 (build " TC_STR(BUILD_NUMBER) ")");
 #else
-    auto* versionLbl = new QLabel("Version 0.9.2");
+    auto* versionLbl = new QLabel("Version 0.9.0");
 #endif
     versionLbl->setStyleSheet(
         "color: #666666; font-size: 11px; background: transparent;");
@@ -331,12 +352,21 @@ void SettingsDialog::buildUi()
 
     root->addWidget(header);
 
-    // ── Window ────────────────────────────────────────────────
-    m_grpWin     = new QGroupBox(tr("Window"));
-    auto* wfl    = new QFormLayout(m_grpWin);
-    wfl->setSpacing(6);
-    wfl->setFormAlignment(Qt::AlignHCenter | Qt::AlignTop);
-    wfl->setLabelAlignment(Qt::AlignHCenter);
+    // ── Tab pages ─────────────────────────────────────────────
+    // "wfl" is the Window page form, "dfl" the Dictation page form; each lives in
+    // its own QWidget added to the tab bar (top) further below.  The Voice-commands
+    // page is built later as a third tab.
+    auto styleForm = [](QFormLayout* fl){
+        fl->setSpacing(6);
+        fl->setFormAlignment(Qt::AlignHCenter | Qt::AlignTop);
+        fl->setLabelAlignment(Qt::AlignHCenter);
+    };
+    auto* winPage  = new QWidget;
+    auto* wfl      = new QFormLayout(winPage);
+    styleForm(wfl);
+    auto* dictPage = new QWidget;
+    auto* dfl      = new QFormLayout(dictPage);
+    styleForm(dfl);
 
     auto* opRow = new QHBoxLayout;
     m_opacitySlider = new QSlider(Qt::Horizontal);
@@ -464,6 +494,7 @@ void SettingsDialog::buildUi()
     m_lblOpacity  = new QLabel(tr("Opacity:"));
     m_lblLanguage = new QLabel(tr("Language:"));
 
+    // Window page
     wfl->addRow(m_lblOpacity, opRow);
     wfl->addRow(m_lblEdgeLock, m_cmbEdgeLock);
     wfl->addRow(m_chkEdgeHide);
@@ -474,15 +505,16 @@ void SettingsDialog::buildUi()
     wfl->addRow(m_chkXMinimizesApp);
     wfl->addRow(m_chkLaunchOnStartup);
     wfl->addRow(m_chkAudio);
-    wfl->addRow(m_lblInputDevice, m_cmbInputDevice);
-    wfl->addRow(m_lblSttModel,    m_cmbSttModel);
-    wfl->addRow(m_lblSttLanguage, m_cmbSttLanguage);
-    wfl->addRow(m_lblInjectMode,  m_cmbInjectMode);
-    wfl->addRow(m_chkInjectPartials);
-    wfl->addRow(m_chkAutoFormat);
-    wfl->addRow(m_lblHotkey,    m_hotkeyEdit);
-    wfl->addRow(m_chkPushToTalk);
-    wfl->addRow(m_lblLanguage,  m_cmbLanguage);
+
+    // Dictation page
+    dfl->addRow(m_lblInputDevice, m_cmbInputDevice);
+    dfl->addRow(m_lblSttModel,    m_cmbSttModel);
+    dfl->addRow(m_lblSttLanguage, m_cmbSttLanguage);
+    dfl->addRow(m_lblInjectMode,  m_cmbInjectMode);
+    dfl->addRow(m_chkInjectPartials);
+    dfl->addRow(m_chkAutoFormat);
+    dfl->addRow(m_lblHotkey,    m_hotkeyEdit);
+    dfl->addRow(m_chkPushToTalk);
 
 #ifdef Q_OS_MAC
     // macOS needs Accessibility permission for TrackType to type into other apps.
@@ -494,7 +526,7 @@ void SettingsDialog::buildUi()
             "x-apple.systempreferences:"
             "com.apple.preference.security?Privacy_Accessibility"));
     });
-    wfl->addRow(m_lblPermissions, m_btnAccessibility);
+    dfl->addRow(m_lblPermissions, m_btnAccessibility);
 #endif
 
     m_btnOnScreenKbd = new QPushButton(tr("Open On-Screen Keyboard"));
@@ -538,11 +570,22 @@ void SettingsDialog::buildUi()
 #endif
     });
 
-    root->addWidget(m_grpWin);
+    // Language is a global control: it sits above the tabs, not inside a page.
+    auto* langRow = new QHBoxLayout;
+    langRow->addWidget(m_lblLanguage);
+    langRow->addWidget(m_cmbLanguage);
+    langRow->addStretch(1);
+    root->addLayout(langRow);
 
-    // ── Voice commands ────────────────────────────────────────
-    m_grpCommands = new QGroupBox(tr("Voice commands"));
-    auto* cmdLay  = new QVBoxLayout(m_grpCommands);
+    // ── Tabs (bar on top) ─────────────────────────────────────
+    m_tabs = new QTabWidget;
+    m_tabs->addTab(winPage,  tr("Window"));
+    m_tabs->addTab(dictPage, tr("Dictation"));
+    root->addWidget(m_tabs);
+
+    // ── Voice commands tab ────────────────────────────────────
+    auto* cmdPage = new QWidget;
+    auto* cmdLay  = new QVBoxLayout(cmdPage);
     cmdLay->setSpacing(6);
 
     m_cmdTable = new QTableWidget(0, 2);
@@ -576,7 +619,7 @@ void SettingsDialog::buildUi()
             m_cmdTable->removeRow(row);
     });
 
-    root->addWidget(m_grpCommands);
+    m_tabs->addTab(cmdPage, tr("Voice commands"));
 
     // ── Buttons ───────────────────────────────────────────────
     m_buttons  = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);

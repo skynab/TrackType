@@ -141,5 +141,6 @@ Instale 'onboard' o 'florence'.</translation></message>
     <message><source>Reset to Defaults</source><translation>Restablecer valores</translation></message>
     <message><source>On-Screen Keyboard</source><translation>Teclado en pantalla</translation></message>
     <message><source>Installing on-screen keyboard…</source><translation>Instalando teclado en pantalla…</translation></message>
+    <message><source>Dictation</source><translation>Dictado</translation></message>
 </context>
 </TS>
