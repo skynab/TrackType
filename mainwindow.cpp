@@ -477,6 +477,11 @@ void MainWindow::ensureModelThenStart()
     prog->setMinimumDuration(0);
     prog->setAutoClose(false);
     prog->setAutoReset(false);
+    prog->setStyleSheet(
+        "QPushButton { background:#FFA600; color:#1A1A1A; border:none; border-radius:4px;"
+        "              padding:6px 18px; font-weight:bold; }"
+        "QPushButton:hover   { background:#FFB833; }"
+        "QPushButton:pressed { background:#CC8400; }");
 
     connect(dl, &ModelDownloader::progress, this, [prog](qint64 received, qint64 total){
         if (total > 0) {

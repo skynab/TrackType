@@ -7,7 +7,7 @@
           Version="0.9.0.$(var.BuildNumber)"
           Manufacturer="OptiTrack"
           UpgradeCode="90E90BF8-824A-4BB2-8B23-6D7CA4091DDF"
-          IconSourceFile="icons\TrackType.ico">
+          IconSourceFile="installer\TrackType.ico">
 
     <BootstrapperApplication>
       <bal:WixStandardBootstrapperApplication Theme="hyperlinkLicense"
