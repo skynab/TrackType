@@ -92,14 +92,17 @@ MainWindow::MainWindow(QTranslator* startupTranslator, QWidget* parent)
     m_settings.launchOnStartup = m_persist.value("window/launchOnStartup",  false).toBool();
     m_settings.audioFeedback   = m_persist.value("audio/enabled",    false).toBool();
     m_settings.inputDevice     = m_persist.value("audio/inputDevice",  "").toString();
-    m_settings.sttModel        = m_persist.value("stt/model", "ggml-base.en.bin").toString();
-    m_settings.sttLanguage     = m_persist.value("stt/language",     "en").toString();
+    m_settings.sttModel         = m_persist.value("stt/model", "ggml-base.en.bin").toString();
+    m_settings.sttLanguage      = m_persist.value("stt/language",       "en").toString();
+    m_settings.initialPrompt    = m_persist.value("stt/initialPrompt",   "").toString();
     m_settings.injectionMode   = static_cast<InjectionMode>(
                                      m_persist.value("inject/mode", 0).toInt());
-    m_settings.injectPartials  = m_persist.value("inject/partials",  false).toBool();
-    m_settings.autoFormat      = m_persist.value("inject/autoFormat", true).toBool();
+    m_settings.injectPartials         = m_persist.value("inject/partials",      false).toBool();
+    m_settings.autoFormat             = m_persist.value("inject/autoFormat",     true).toBool();
+    m_settings.reviewBeforeInjecting  = m_persist.value("inject/reviewMode",     false).toBool();
     m_settings.hotkey          = m_persist.value("hotkey/sequence",   "").toString();
     m_settings.hotkeyPushToTalk= m_persist.value("hotkey/pushToTalk", false).toBool();
+    m_settings.undoHotkey      = m_persist.value("hotkey/undoSequence", "").toString();
 
     // Voice commands: fall back to the built-in defaults on first run.
     const QVariantMap cmdVar = m_persist.value("commands").toMap();
@@ -109,6 +112,11 @@ MainWindow::MainWindow(QTranslator* startupTranslator, QWidget* parent)
         for (auto it = cmdVar.constBegin(); it != cmdVar.constEnd(); ++it)
             m_settings.commands.insert(it.key(), it.value().toString());
     }
+
+    // Substitutions: flat string list stored as [misheard, intended, misheard, intended, …].
+    const QStringList subList = m_persist.value("substitutions").toStringList();
+    for (int i = 0; i + 1 < subList.size(); i += 2)
+        m_settings.substitutions.insert(subList.at(i), subList.at(i + 1));
     m_settings.language        = m_persist.value("language",          "en").toString();
     m_settings.edgeLock        = static_cast<EdgeLock>(m_persist.value("window/edgeLock", 0).toInt());
     m_settings.edgeHide        = m_persist.value("window/edgeHide", false).toBool();
@@ -149,6 +157,7 @@ MainWindow::MainWindow(QTranslator* startupTranslator, QWidget* parent)
     initAudio();
     initStt();
     setupHotkey();
+    setupUndoHotkey();
 
     // If launch-on-startup is enabled, make sure the OS registration still
     // exists and points at the current executable (self-heals after updates).
@@ -419,6 +428,7 @@ void MainWindow::initStt()
 
     m_stt = new WhisperSttEngine(this);
     m_stt->setLanguage(m_settings.sttLanguage);
+    m_stt->setInitialPrompt(m_settings.initialPrompt);
 
     // Feed the contiguous capture stream into the recognizer; its VAD segments
     // utterances and decides when to finalize (the chunker's overlapping windows
@@ -545,11 +555,16 @@ void MainWindow::applyInjectionSettings()
             : TextInjector::Mode::Type);
     m_processor.setAutoFormat(m_settings.autoFormat);
     m_processor.setCommands(m_settings.commands);
+    m_processor.setSubstitutions(m_settings.substitutions);
 }
 
 void MainWindow::onSttPartial(const QString& raw)
 {
     qInfo("TrackType STT (partial) > %s", qUtf8Printable(raw));
+
+    // Don't disturb the review popup or inject partials while waiting for commit.
+    if (m_reviewPending)
+        return;
 
     // Always preview the would-be-typed text near the toolbar.
     const QString shown = m_processor.previewPartial(raw);
@@ -574,10 +589,7 @@ void MainWindow::onSttFinal(const QString& raw)
 {
     qInfo("TrackType STT > %s", qUtf8Printable(raw));
 
-    if (m_preview)
-        m_preview->hide();   // committed → drop the preview
-
-    // Retract any live partial before committing the finalized text.
+    // Retract any live partial before handling the final.
     if (m_pendingPartialLen > 0) {
         TextInjector::sendBackspaces(m_pendingPartialLen);
         m_pendingPartialLen = 0;
@@ -586,24 +598,74 @@ void MainWindow::onSttFinal(const QString& raw)
     const TranscriptProcessor::Result r = m_processor.processFinal(raw);
 
     if (m_paused) {
-        // Engine stays warm but nothing is typed while paused.
+        if (m_preview) m_preview->hide();
         return;
     }
-    if (!r.text.isEmpty()) {
-        TextInjector::typeText(r.text);
-        if (r.cursorBack > 0)
-            TextInjector::moveCursorLeft(r.cursorBack);
-        // Undo removes the inserted text; skip it for caret-repositioned commands
-        // (e.g. brackets) where a plain backspace count would be wrong.
-        m_lastInjectedLen = (r.cursorBack == 0) ? int(r.text.size()) : 0;
-        if (m_undoAct) m_undoAct->setEnabled(m_lastInjectedLen > 0);
-        setSttStatus(SttState::Injecting, tr("Injecting…"));
-        // Fall back to the listening state shortly after.
-        QTimer::singleShot(150, this, [this]{
-            if (m_dictateBtn && m_dictateBtn->isChecked() && !m_paused)
-                setSttStatus(SttState::Listening, tr("Listening"));
-        });
+    if (r.scratchThat) {
+        if (m_preview) m_preview->hide();
+        undoLastInjection();
+        return;
     }
+    if (r.commitReview) {
+        commitPendingReview();
+        return;
+    }
+    if (r.cancelReview) {
+        cancelPendingReview();
+        return;
+    }
+    if (r.text.isEmpty()) {
+        if (m_preview) m_preview->hide();
+        return;
+    }
+
+    if (m_settings.reviewBeforeInjecting) {
+        // Hold for review: show in preview with action hint, don't inject yet.
+        m_pendingResult = r;
+        m_reviewPending = true;
+        if (m_preview)
+            m_preview->showPendingReview(r.text, frameGeometry());
+        return;
+    }
+
+    if (m_preview) m_preview->hide();
+    injectResult(r);
+}
+
+void MainWindow::injectResult(const TranscriptProcessor::Result& r)
+{
+    TextInjector::typeText(r.text);
+    if (r.cursorBack > 0)
+        TextInjector::moveCursorLeft(r.cursorBack);
+    // Undo removes the inserted text; skip it for caret-repositioned commands
+    // (e.g. brackets) where a plain backspace count would be wrong.
+    m_lastInjectedLen = (r.cursorBack == 0) ? int(r.text.size()) : 0;
+    if (m_undoAct) m_undoAct->setEnabled(m_lastInjectedLen > 0);
+    setSttStatus(SttState::Injecting, tr("Injecting…"));
+    QTimer::singleShot(150, this, [this]{
+        if (m_dictateBtn && m_dictateBtn->isChecked() && !m_paused)
+            setSttStatus(SttState::Listening, tr("Listening"));
+    });
+}
+
+void MainWindow::commitPendingReview()
+{
+    if (!m_reviewPending)
+        return;
+    m_reviewPending = false;
+    const TranscriptProcessor::Result r = m_pendingResult;
+    m_pendingResult = {};
+    if (m_preview) m_preview->hide();
+    injectResult(r);
+}
+
+void MainWindow::cancelPendingReview()
+{
+    if (!m_reviewPending)
+        return;
+    m_reviewPending = false;
+    m_pendingResult = {};
+    if (m_preview) m_preview->hide();
 }
 
 void MainWindow::onDictateToggled(bool on)
@@ -634,6 +696,7 @@ void MainWindow::onDictateToggled(bool on)
         if (m_audio) m_audio->stop();
         m_pendingPartialLen = 0;
         m_paused = false;
+        cancelPendingReview();
         if (m_preview) m_preview->hide();
 
         playCue();
@@ -654,10 +717,27 @@ void MainWindow::setupHotkey()
     m_hotkey->setShortcut(QKeySequence(m_settings.hotkey));
 }
 
+void MainWindow::setupUndoHotkey()
+{
+    if (!m_undoHotkey) {
+        m_undoHotkey = new GlobalHotkey(this);
+        connect(m_undoHotkey, &GlobalHotkey::pressed, this, &MainWindow::undoLastInjection);
+    }
+    m_undoHotkey->setShortcut(QKeySequence(m_settings.undoHotkey));
+}
+
 void MainWindow::onHotkeyPressed()
 {
     if (!m_dictateBtn || !m_dictateBtn->isEnabled())
         return;
+
+    // In review mode a hotkey press commits the held result rather than
+    // toggling dictation.
+    if (m_reviewPending) {
+        commitPendingReview();
+        return;
+    }
+
     if (m_settings.hotkeyPushToTalk) {
         if (!m_dictateBtn->isChecked())
             m_dictateBtn->setChecked(true);   // start while held
@@ -1070,9 +1150,10 @@ void MainWindow::syncLaunchOnStartup()
 
 void MainWindow::applySettings(const AppSettings& s)
 {
-    const QString oldLanguage    = m_settings.language;
-    const QString oldSttModel    = m_settings.sttModel;
-    const QString oldSttLanguage = m_settings.sttLanguage;
+    const QString oldLanguage      = m_settings.language;
+    const QString oldSttModel      = m_settings.sttModel;
+    const QString oldSttLanguage   = m_settings.sttLanguage;
+    const QString oldInitialPrompt = m_settings.initialPrompt;
     m_settings = s;
 
     setWindowOpacity(s.windowOpacity);
@@ -1107,15 +1188,23 @@ void MainWindow::applySettings(const AppSettings& s)
     m_persist.setValue("audio/inputDevice",  s.inputDevice);
     m_persist.setValue("stt/model",          s.sttModel);
     m_persist.setValue("stt/language",       s.sttLanguage);
+    m_persist.setValue("stt/initialPrompt",  s.initialPrompt);
     m_persist.setValue("inject/mode",        int(s.injectionMode));
     m_persist.setValue("inject/partials",    s.injectPartials);
     m_persist.setValue("inject/autoFormat",  s.autoFormat);
+    m_persist.setValue("inject/reviewMode",  s.reviewBeforeInjecting);
     m_persist.setValue("hotkey/sequence",    s.hotkey);
     m_persist.setValue("hotkey/pushToTalk",  s.hotkeyPushToTalk);
+    m_persist.setValue("hotkey/undoSequence", s.undoHotkey);
     QVariantMap cmdVar;
     for (auto it = s.commands.constBegin(); it != s.commands.constEnd(); ++it)
         cmdVar.insert(it.key(), it.value());
     m_persist.setValue("commands",           cmdVar);
+
+    QStringList subList;
+    for (auto it = s.substitutions.constBegin(); it != s.substitutions.constEnd(); ++it)
+        subList << it.key() << it.value();
+    m_persist.setValue("substitutions",      subList);
     m_persist.setValue("language",           s.language);
 
     // Switch the live capture to the chosen microphone (restarts capture if the
@@ -1126,15 +1215,20 @@ void MainWindow::applySettings(const AppSettings& s)
             m_audio->start();
     }
 
-    // Injection mode / formatting and the global hotkey take effect immediately.
+    // Injection mode / formatting and the global hotkeys take effect immediately.
+    // Drop any pending review so the new settings apply from a clean slate.
+    cancelPendingReview();
     applyInjectionSettings();
     setupHotkey();
+    setupUndoHotkey();
 
     // Apply STT changes: language is cheap; a model change re-runs the
     // ensure/download/reload flow.
     if (m_stt) {
         if (s.sttLanguage != oldSttLanguage)
             m_stt->setLanguage(s.sttLanguage);
+        if (s.initialPrompt != oldInitialPrompt)
+            m_stt->setInitialPrompt(s.initialPrompt);
         if (s.sttModel != oldSttModel)
             ensureModelThenStart();   // m_settings already updated above
     }

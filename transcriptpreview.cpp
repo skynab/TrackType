@@ -3,6 +3,15 @@
 #include <QLabel>
 #include <QVBoxLayout>
 
+static const char* kNormalStyle =
+    "QWidget { background: #1A1A1A; border: 1px solid #FFA600; border-radius: 4px; }"
+    "QLabel  { color: #FFA600; font-size: 12px; background: transparent; border: none; }";
+
+static const char* kReviewStyle =
+    "QWidget { background: #1A1A1A; border: 1px solid #FFFFFF; border-radius: 4px; }"
+    "QLabel  { color: #FFFFFF; font-size: 12px; background: transparent; border: none; }"
+    "QLabel#hint { color: #AAAAAA; font-size: 10px; }";
+
 TranscriptPreview::TranscriptPreview(QWidget* parent)
     : QWidget(parent,
               Qt::FramelessWindowHint | Qt::Tool | Qt::WindowStaysOnTopHint
@@ -16,18 +25,29 @@ TranscriptPreview::TranscriptPreview(QWidget* parent)
 
     auto* layout = new QVBoxLayout(this);
     layout->setContentsMargins(8, 5, 8, 5);
+    layout->setSpacing(2);
 
     m_label = new QLabel;
     m_label->setWordWrap(true);
     m_label->setTextInteractionFlags(Qt::NoTextInteraction);
     layout->addWidget(m_label);
 
-    // Reuse the app's dark/orange palette (matches the toolbar tooltip style).
-    setStyleSheet(
-        "QWidget { background: #1A1A1A; border: 1px solid #FFA600; border-radius: 4px; }"
-        "QLabel  { color: #FFA600; font-size: 12px; background: transparent; border: none; }"
-    );
+    m_hintLabel = new QLabel;
+    m_hintLabel->setObjectName("hint");
+    m_hintLabel->setTextInteractionFlags(Qt::NoTextInteraction);
+    m_hintLabel->setVisible(false);
+    layout->addWidget(m_hintLabel);
+
+    setStyleSheet(kNormalStyle);
     setMaximumWidth(360);
+}
+
+void TranscriptPreview::reposition(const QRect& anchorGlobal)
+{
+    const int w = qMax(width(), anchorGlobal.width());
+    setFixedWidth(qMin(w, maximumWidth()));
+    adjustSize();
+    move(anchorGlobal.left(), anchorGlobal.bottom() + 4);
 }
 
 void TranscriptPreview::showText(const QString& text, const QRect& anchorGlobal)
@@ -36,15 +56,23 @@ void TranscriptPreview::showText(const QString& text, const QRect& anchorGlobal)
         hide();
         return;
     }
+    setStyleSheet(kNormalStyle);
+    m_hintLabel->setVisible(false);
     m_label->setText(text);
     adjustSize();
+    reposition(anchorGlobal);
+    if (!isVisible())
+        show();
+}
 
-    // Place just below the toolbar, left-aligned with it, clamped to its width.
-    const int w = qMax(width(), anchorGlobal.width());
-    setFixedWidth(qMin(w, maximumWidth()));
+void TranscriptPreview::showPendingReview(const QString& text, const QRect& anchorGlobal)
+{
+    setStyleSheet(kReviewStyle);
+    m_label->setText(text);
+    m_hintLabel->setText(tr("Hotkey or 'commit' to inject · 'cancel' to discard"));
+    m_hintLabel->setVisible(true);
     adjustSize();
-    move(anchorGlobal.left(), anchorGlobal.bottom() + 4);
-
+    reposition(anchorGlobal);
     if (!isVisible())
         show();
 }

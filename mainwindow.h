@@ -70,10 +70,16 @@ private:
     void setSttStatus(SttState state, const QString& text);
 
     void setupHotkey();          // (re)register the global dictation hotkey
+    void setupUndoHotkey();      // (re)register the global undo hotkey
     void onHotkeyPressed();
     void onHotkeyReleased();
     void togglePause();          // stop injecting but keep the engine warm
     void undoLastInjection();    // backspace the last committed text
+
+    // Review-mode helpers.
+    void injectResult(const TranscriptProcessor::Result& r); // shared injection path
+    void commitPendingReview();  // inject the held result
+    void cancelPendingReview();  // discard the held result
     void playCue();              // optional start/stop audio cue
     void saveWindowSettings();
     void loadWindowSettings();
@@ -122,11 +128,14 @@ private:
     AudioCapture*     m_audio      = nullptr;
     WhisperSttEngine* m_stt        = nullptr;
     GlobalHotkey*     m_hotkey     = nullptr;
+    GlobalHotkey*     m_undoHotkey = nullptr;
     TranscriptPreview* m_preview   = nullptr;
     TranscriptProcessor m_processor;         // recognition → text-to-inject seam
     int               m_pendingPartialLen = 0; // chars of the live partial on screen
     int               m_lastInjectedLen   = 0; // chars of the last committed final
     bool              m_paused            = false;
+    bool              m_reviewPending     = false;
+    TranscriptProcessor::Result m_pendingResult;  // held for review-mode confirm
     QSystemTrayIcon*  m_tray       = nullptr;
     QMenu*            m_trayMenu   = nullptr;
     QAction*          m_showAct    = nullptr;

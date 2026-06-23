@@ -19,6 +19,13 @@ public:
     // given (global) anchor rectangle — typically the main toolbar's geometry.
     void showText(const QString& text, const QRect& anchorGlobal);
 
+    // Show finalized text held for review (visually distinct: white border +
+    // action hint).  The caller hides() or calls showText() when done.
+    void showPendingReview(const QString& text, const QRect& anchorGlobal);
+
 private:
-    QLabel* m_label = nullptr;
+    void reposition(const QRect& anchorGlobal);
+
+    QLabel* m_label     = nullptr;
+    QLabel* m_hintLabel = nullptr;
 };

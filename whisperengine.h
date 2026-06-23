@@ -25,6 +25,7 @@ public:
     bool isModelLoaded() const override { return m_modelLoaded.load(); }
     bool isRunning() const override     { return m_running.load(); }
     void setLanguage(const QString& lang) override;
+    void setInitialPrompt(const QString& prompt) override;
 
 public slots:
     void start() override;
@@ -36,6 +37,7 @@ signals:
     void requestLoadModel(const QString& modelPath);
     void requestProcess(const QByteArray& pcm);
     void requestSetLanguage(const QString& lang);
+    void requestSetInitialPrompt(const QString& prompt);
 
 private:
     // Cap on in-flight buffers so a recognizer slower than real time cannot grow

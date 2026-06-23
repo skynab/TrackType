@@ -259,8 +259,10 @@ void SettingsDialog::retranslateUi()
         m_tabs->setTabText(0, tr("Window"));
         m_tabs->setTabText(1, tr("Dictation"));
         m_tabs->setTabText(2, tr("Voice commands"));
+        m_tabs->setTabText(3, tr("Substitutions"));
     }
     m_cmdTable->setHorizontalHeaderLabels({tr("Spoken phrase"), tr("Output")});
+    m_subTable->setHorizontalHeaderLabels({tr("Misheard"), tr("Intended")});
     m_btnAddCmd->setText(tr("Add"));
     m_btnRemoveCmd->setText(tr("Remove"));
     m_lblEdgeLock->setText(tr("Lock to screen edge:"));
@@ -278,13 +280,17 @@ void SettingsDialog::retranslateUi()
     m_lblSttModel->setText(tr("Speech model:"));
     m_lblSttLanguage->setText(tr("Speech language:"));
     m_cmbSttLanguage->setItemText(0, tr("Auto-detect"));
+    m_lblInitialPrompt->setText(tr("Personal vocabulary:"));
+    m_initialPromptEdit->setPlaceholderText(tr("e.g. Stuart, OptiTrack, TrackType"));
     m_lblInjectMode->setText(tr("Type text by:"));
     m_cmbInjectMode->setItemText(0, tr("Simulated keystrokes"));
     m_cmbInjectMode->setItemText(1, tr("Clipboard paste"));
     m_chkInjectPartials->setText(tr("Type partial results live"));
     m_chkAutoFormat->setText(tr("Auto spacing && capitalization"));
+    m_chkReviewMode->setText(tr("Review before injecting"));
     m_lblHotkey->setText(tr("Dictation hotkey:"));
     m_chkPushToTalk->setText(tr("Hold to talk (push-to-talk)"));
+    m_lblUndoHotkey->setText(tr("Undo dictation hotkey:"));
     m_lblOpacity->setText(tr("Opacity:"));
     m_lblLanguage->setText(tr("Language:"));
     m_resetBtn->setText(tr("Reset to Defaults"));
@@ -436,6 +442,10 @@ void SettingsDialog::buildUi()
     m_cmbSttLanguage->addItem("한국어",      "ko");
 
     // Disable the language picker for English-only (.en) models.
+    m_lblInitialPrompt = new QLabel(tr("Personal vocabulary:"));
+    m_initialPromptEdit = new QLineEdit;
+    m_initialPromptEdit->setPlaceholderText(tr("e.g. Stuart, OptiTrack, TrackType"));
+
     connect(m_cmbSttModel, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, [this](int){
         const ModelInfo mi = ModelManager::modelInfo(
@@ -458,6 +468,7 @@ void SettingsDialog::buildUi()
                              int(InjectionMode::ClipboardPaste));
     m_chkInjectPartials = new QCheckBox(tr("Type partial results live"));
     m_chkAutoFormat     = new QCheckBox(tr("Auto spacing && capitalization"));
+    m_chkReviewMode     = new QCheckBox(tr("Review before injecting"));
 
     // Live partials only make sense with simulated keystrokes (paste cannot
     // retract); disable the option in clipboard-paste mode.
@@ -472,6 +483,10 @@ void SettingsDialog::buildUi()
     m_lblHotkey = new QLabel(tr("Dictation hotkey:"));
     m_hotkeyEdit = new QKeySequenceEdit;   // only the first chord is used
     m_chkPushToTalk = new QCheckBox(tr("Hold to talk (push-to-talk)"));
+
+    // Global undo hotkey.
+    m_lblUndoHotkey  = new QLabel(tr("Undo dictation hotkey:"));
+    m_undoHotkeyEdit = new QKeySequenceEdit;
 
     // Language names are shown in their native script — intentionally not tr()
     m_cmbLanguage = new QComboBox;
@@ -509,12 +524,15 @@ void SettingsDialog::buildUi()
     // Dictation page
     dfl->addRow(m_lblInputDevice, m_cmbInputDevice);
     dfl->addRow(m_lblSttModel,    m_cmbSttModel);
-    dfl->addRow(m_lblSttLanguage, m_cmbSttLanguage);
-    dfl->addRow(m_lblInjectMode,  m_cmbInjectMode);
+    dfl->addRow(m_lblSttLanguage,   m_cmbSttLanguage);
+    dfl->addRow(m_lblInitialPrompt, m_initialPromptEdit);
+    dfl->addRow(m_lblInjectMode,    m_cmbInjectMode);
     dfl->addRow(m_chkInjectPartials);
     dfl->addRow(m_chkAutoFormat);
-    dfl->addRow(m_lblHotkey,    m_hotkeyEdit);
+    dfl->addRow(m_chkReviewMode);
+    dfl->addRow(m_lblHotkey,      m_hotkeyEdit);
     dfl->addRow(m_chkPushToTalk);
+    dfl->addRow(m_lblUndoHotkey,  m_undoHotkeyEdit);
 
 #ifdef Q_OS_MAC
     // macOS needs Accessibility permission for TrackType to type into other apps.
@@ -620,6 +638,44 @@ void SettingsDialog::buildUi()
     });
 
     m_tabs->addTab(cmdPage, tr("Voice commands"));
+
+    // ── Substitutions tab ─────────────────────────────────────
+    auto* subPage = new QWidget;
+    auto* subLay  = new QVBoxLayout(subPage);
+    subLay->setSpacing(6);
+
+    m_subTable = new QTableWidget(0, 2);
+    m_subTable->setHorizontalHeaderLabels({tr("Misheard"), tr("Intended")});
+    m_subTable->horizontalHeader()->setStretchLastSection(true);
+    m_subTable->verticalHeader()->setVisible(false);
+    m_subTable->setSelectionBehavior(QAbstractItemView::SelectRows);
+    m_subTable->setMaximumHeight(140);
+    subLay->addWidget(m_subTable);
+
+    auto* subBtns = new QHBoxLayout;
+    m_btnAddSub    = new QPushButton(tr("Add"));
+    m_btnRemoveSub = new QPushButton(tr("Remove"));
+    m_btnAddSub->setProperty("flat", true);
+    m_btnRemoveSub->setProperty("flat", true);
+    subBtns->addStretch(1);
+    subBtns->addWidget(m_btnAddSub);
+    subBtns->addWidget(m_btnRemoveSub);
+    subLay->addLayout(subBtns);
+
+    connect(m_btnAddSub, &QPushButton::clicked, this, [this]{
+        const int row = m_subTable->rowCount();
+        m_subTable->insertRow(row);
+        m_subTable->setItem(row, 0, new QTableWidgetItem);
+        m_subTable->setItem(row, 1, new QTableWidgetItem);
+        m_subTable->editItem(m_subTable->item(row, 0));
+    });
+    connect(m_btnRemoveSub, &QPushButton::clicked, this, [this]{
+        const int row = m_subTable->currentRow();
+        if (row >= 0)
+            m_subTable->removeRow(row);
+    });
+
+    m_tabs->addTab(subPage, tr("Substitutions"));
 
     // ── Buttons ───────────────────────────────────────────────
     m_buttons  = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
@@ -733,14 +789,18 @@ void SettingsDialog::loadFrom(const AppSettings& s)
         mi.multilingual ? s.sttLanguage : QStringLiteral("en"));
     m_cmbSttLanguage->setCurrentIndex(langIdx >= 0 ? langIdx : 0);
 
+    m_initialPromptEdit->setText(s.initialPrompt);
+
     const int modeIdx = m_cmbInjectMode->findData(int(s.injectionMode));
     m_cmbInjectMode->setCurrentIndex(modeIdx >= 0 ? modeIdx : 0);
     m_chkInjectPartials->setChecked(s.injectPartials);
     m_chkInjectPartials->setEnabled(s.injectionMode == InjectionMode::Type);
     m_chkAutoFormat->setChecked(s.autoFormat);
+    m_chkReviewMode->setChecked(s.reviewBeforeInjecting);
 
     m_hotkeyEdit->setKeySequence(QKeySequence(s.hotkey));
     m_chkPushToTalk->setChecked(s.hotkeyPushToTalk);
+    m_undoHotkeyEdit->setKeySequence(QKeySequence(s.undoHotkey));
 
     m_cmdTable->setRowCount(0);
     for (auto it = s.commands.constBegin(); it != s.commands.constEnd(); ++it) {
@@ -748,6 +808,14 @@ void SettingsDialog::loadFrom(const AppSettings& s)
         m_cmdTable->insertRow(row);
         m_cmdTable->setItem(row, 0, new QTableWidgetItem(it.key()));
         m_cmdTable->setItem(row, 1, new QTableWidgetItem(escapeForEditor(it.value())));
+    }
+
+    m_subTable->setRowCount(0);
+    for (auto it = s.substitutions.constBegin(); it != s.substitutions.constEnd(); ++it) {
+        const int row = m_subTable->rowCount();
+        m_subTable->insertRow(row);
+        m_subTable->setItem(row, 0, new QTableWidgetItem(it.key()));
+        m_subTable->setItem(row, 1, new QTableWidgetItem(it.value()));
     }
 
     for (int i = 0; i < m_cmbLanguage->count(); ++i) {
@@ -779,9 +847,12 @@ AppSettings SettingsDialog::readUi() const
     s.injectionMode    = InjectionMode(m_cmbInjectMode->currentData().toInt());
     s.injectPartials   = m_chkInjectPartials->isChecked()
                          && (s.injectionMode == InjectionMode::Type);
-    s.autoFormat       = m_chkAutoFormat->isChecked();
+    s.autoFormat              = m_chkAutoFormat->isChecked();
+    s.reviewBeforeInjecting   = m_chkReviewMode->isChecked();
+    s.initialPrompt           = m_initialPromptEdit->text().trimmed();
     s.hotkey           = m_hotkeyEdit->keySequence().toString(QKeySequence::PortableText);
     s.hotkeyPushToTalk = m_chkPushToTalk->isChecked();
+    s.undoHotkey       = m_undoHotkeyEdit->keySequence().toString(QKeySequence::PortableText);
 
     QMap<QString, QString> cmds;
     for (int row = 0; row < m_cmdTable->rowCount(); ++row) {
@@ -793,6 +864,17 @@ AppSettings SettingsDialog::readUi() const
         cmds.insert(phrase, o ? unescapeFromEditor(o->text()) : QString());
     }
     s.commands         = cmds;
+
+    QMap<QString, QString> subs;
+    for (int row = 0; row < m_subTable->rowCount(); ++row) {
+        const QTableWidgetItem* k = m_subTable->item(row, 0);
+        const QTableWidgetItem* v = m_subTable->item(row, 1);
+        const QString misheard = k ? k->text().trimmed() : QString();
+        if (misheard.isEmpty())
+            continue;
+        subs.insert(misheard, v ? v->text().trimmed() : QString());
+    }
+    s.substitutions    = subs;
 
     s.language         = m_cmbLanguage->currentData().toString();
     return s;

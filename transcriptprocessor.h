@@ -21,8 +21,11 @@ class TranscriptProcessor
 {
 public:
     struct Result {
-        QString text;            // text to inject ("" = inject nothing)
-        int     cursorBack = 0;  // Left-arrow presses after injecting (caret placement)
+        QString text;              // text to inject ("" = inject nothing)
+        int     cursorBack   = 0;  // Left-arrow presses after injecting (caret placement)
+        bool    scratchThat  = false; // erase last injected segment instead of typing
+        bool    commitReview = false; // commit the held review result
+        bool    cancelReview = false; // discard the held review result
     };
 
     TranscriptProcessor();
@@ -35,6 +38,8 @@ public:
 
     void setCommands(const QMap<QString, QString>& commands) { m_commands = commands; }
     QMap<QString, QString> commands() const { return m_commands; }
+
+    void setSubstitutions(const QMap<QString, QString>& subs) { m_substitutions = subs; }
 
     // Cursor-position marker that may appear in a command's output.
     static const QString CursorMark;   // "{|}"
@@ -50,6 +55,7 @@ private:
     // trailing punctuation the recognizer may append).
     static QString commandKey(const QString& raw);
 
-    TextNormalizer        m_normalizer;
+    TextNormalizer         m_normalizer;
     QMap<QString, QString> m_commands;
+    QMap<QString, QString> m_substitutions;
 };

@@ -48,7 +48,7 @@ private:
     QKeySequence m_seq;
 
 #if defined(PLATFORM_WINDOWS)
-    int m_id = 1;
+    int m_id = 0;   // assigned on first registerNative() via a static counter
     bool m_registered = false;
 #elif defined(PLATFORM_LINUX)
     X11HotkeyThread* m_thread = nullptr;

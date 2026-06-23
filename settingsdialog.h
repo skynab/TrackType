@@ -3,6 +3,7 @@
 #include <QDialog>
 #include <QCheckBox>
 #include <QKeySequenceEdit>
+#include <QLineEdit>
 #include <QMap>
 
 QT_BEGIN_NAMESPACE
@@ -42,16 +43,28 @@ struct AppSettings {
 
     // Text injection of recognized speech.
     InjectionMode injectionMode = InjectionMode::Type;
-    bool injectPartials = false;   // type live partials (Type mode) vs. only finals
-    bool autoFormat     = true;    // auto spacing + sentence capitalization
+    bool injectPartials         = false; // type live partials (Type mode) vs. only finals
+    bool autoFormat             = true;  // auto spacing + sentence capitalization
+    bool reviewBeforeInjecting  = false; // hold finals for review before typing them
 
     // Global dictation hotkey.
     QString hotkey;                // e.g. "Ctrl+Alt+D" ("" = none)
     bool    hotkeyPushToTalk = false;  // hold-to-talk vs. press-to-toggle
 
+    // Global undo hotkey — erases the last injected segment.
+    QString undoHotkey;            // e.g. "Ctrl+Alt+Z" ("" = none)
+
     // Voice commands: spoken phrase → output text (the "{|}" marker positions the
     // caret).  Empty means "use the built-in defaults".
     QMap<QString, QString> commands;
+
+    // Substitutions: misheard word/phrase → intended replacement.
+    // Applied after the command check but before auto-formatting.
+    QMap<QString, QString> substitutions;
+
+    // Personal vocabulary hint passed to Whisper as initial_prompt to bias
+    // recognition toward uncommon proper nouns, names, and domain terms.
+    QString initialPrompt;
 
     // Language (ISO code: "en", "fr", "es", "zh_CN", "ja", "ko", …)
     QString language = "en";
@@ -103,6 +116,11 @@ private:
     QPushButton*  m_btnAddCmd    = nullptr;
     QPushButton*  m_btnRemoveCmd = nullptr;
 
+    // Substitutions editor.
+    QTableWidget* m_subTable     = nullptr;
+    QPushButton*  m_btnAddSub    = nullptr;
+    QPushButton*  m_btnRemoveSub = nullptr;
+
     // ── Form-row labels (need retranslation) ──────────────────
     QLabel* m_lblOpacity  = nullptr;
     QLabel* m_lblLanguage = nullptr;
@@ -121,17 +139,22 @@ private:
     QCheckBox*   m_chkAudio;
     QLabel*      m_lblInputDevice = nullptr;
     QComboBox*   m_cmbInputDevice = nullptr;
-    QLabel*      m_lblSttModel    = nullptr;
-    QComboBox*   m_cmbSttModel    = nullptr;
-    QLabel*      m_lblSttLanguage = nullptr;
-    QComboBox*   m_cmbSttLanguage = nullptr;
+    QLabel*      m_lblSttModel        = nullptr;
+    QComboBox*   m_cmbSttModel        = nullptr;
+    QLabel*      m_lblSttLanguage     = nullptr;
+    QComboBox*   m_cmbSttLanguage     = nullptr;
+    QLabel*      m_lblInitialPrompt   = nullptr;
+    QLineEdit*   m_initialPromptEdit  = nullptr;
     QLabel*      m_lblInjectMode  = nullptr;
     QComboBox*   m_cmbInjectMode  = nullptr;
-    QCheckBox*   m_chkInjectPartials = nullptr;
-    QCheckBox*   m_chkAutoFormat     = nullptr;
+    QCheckBox*   m_chkInjectPartials    = nullptr;
+    QCheckBox*   m_chkAutoFormat        = nullptr;
+    QCheckBox*   m_chkReviewMode        = nullptr;
     QLabel*           m_lblHotkey      = nullptr;
     QKeySequenceEdit* m_hotkeyEdit     = nullptr;
     QCheckBox*        m_chkPushToTalk  = nullptr;
+    QLabel*           m_lblUndoHotkey  = nullptr;
+    QKeySequenceEdit* m_undoHotkeyEdit = nullptr;
     QComboBox*   m_cmbLanguage;
 
     // Edge lock

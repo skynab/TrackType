@@ -50,6 +50,11 @@ public:
     // so this stays optional for the seam.
     virtual void setLanguage(const QString& lang) { Q_UNUSED(lang); }
 
+    // Optional vocabulary hint passed to the backend to bias recognition toward
+    // uncommon words (proper nouns, product names, etc.).  Comma-separated list
+    // of preferred words/phrases.  Default no-op.
+    virtual void setInitialPrompt(const QString& prompt) { Q_UNUSED(prompt); }
+
 public slots:
     // Begin a recognition session.  Requires a loaded model; emits
     // errorOccurred() if called before one is ready, otherwise started().

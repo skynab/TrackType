@@ -84,6 +84,11 @@ public slots:
         m_language = lang.isEmpty() ? QStringLiteral("auto") : lang;
     }
 
+    void setInitialPrompt(const QString& prompt)
+    {
+        m_initialPrompt = prompt;
+    }
+
     // A buffer of contiguous mono / 16 kHz / 16-bit PCM from AudioCapture.
     void process(const QByteArray& pcm)
     {
@@ -180,9 +185,11 @@ private:
         p.translate        = false;
         p.suppress_blank   = true;
 
-        // Keep the language bytes alive for the duration of the call.
-        const QByteArray lang = m_language.toUtf8();
-        p.language = lang.constData();
+        // Keep these byte arrays alive for the duration of the whisper call.
+        const QByteArray lang   = m_language.toUtf8();
+        const QByteArray prompt = m_initialPrompt.toUtf8();
+        p.language       = lang.constData();
+        p.initial_prompt = prompt.isEmpty() ? nullptr : prompt.constData();
 
         if (whisper_full(m_ctx, p, f.data(), n) != 0) {
             emit errorOccurred(tr("Speech recognition failed."));
@@ -197,7 +204,8 @@ private:
     }
 
     whisper_context* m_ctx = nullptr;
-    QString          m_language = QStringLiteral("en");
+    QString          m_language      = QStringLiteral("en");
+    QString          m_initialPrompt;
 
     QByteArray m_utter;            // current utterance PCM (contiguous)
     bool       m_inSpeech       = false;
@@ -224,6 +232,8 @@ WhisperSttEngine::WhisperSttEngine(QObject* parent)
             m_worker, &WhisperWorker::process);
     connect(this, &WhisperSttEngine::requestSetLanguage,
             m_worker, &WhisperWorker::setLanguage);
+    connect(this, &WhisperSttEngine::requestSetInitialPrompt,
+            m_worker, &WhisperWorker::setInitialPrompt);
 
     // Worker → engine: update state and re-emit on the owning thread.
     connect(m_worker, &WhisperWorker::modelLoaded, this, [this]{
@@ -261,6 +271,11 @@ void WhisperSttEngine::loadModel(const QString& modelPath)
 void WhisperSttEngine::setLanguage(const QString& lang)
 {
     emit requestSetLanguage(lang);
+}
+
+void WhisperSttEngine::setInitialPrompt(const QString& prompt)
+{
+    emit requestSetInitialPrompt(prompt);
 }
 
 void WhisperSttEngine::start()

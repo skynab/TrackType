@@ -55,6 +55,10 @@ bool GlobalHotkey::registerNative(int key, int mods)
     const UINT vk = qtKeyToVk(key);
     if (!vk)
         return false;
+    if (m_id == 0) {
+        static int s_nextId = 1;
+        m_id = s_nextId++;
+    }
     UINT m = MOD_NOREPEAT;
     if (mods & Qt::ControlModifier) m |= MOD_CONTROL;
     if (mods & Qt::AltModifier)     m |= MOD_ALT;
