@@ -21,6 +21,8 @@ class LevelMeter;
 class WhisperSttEngine;
 class GlobalHotkey;
 class TranscriptPreview;
+class AiCleanup;
+class WindowWatcher;
 
 class MainWindow : public QWidget
 {
@@ -51,6 +53,7 @@ private slots:
     void onTrayActivated(QSystemTrayIcon::ActivationReason);
     void applySettings(const AppSettings& s);
     void onEdgePoll();
+    void onWindowTitleChanged(const QString& title);
 
 private:
     void buildUi();
@@ -72,6 +75,7 @@ private:
     void setupHotkey();          // (re)register the global dictation hotkey
     void setupUndoHotkey();      // (re)register the global undo hotkey
     void onHotkeyPressed();
+    void applyProfile(int profileIdx); // switch to a matching profile (or -1 = globals)
     void onHotkeyReleased();
     void togglePause();          // stop injecting but keep the engine warm
     void undoLastInjection();    // backspace the last committed text
@@ -130,12 +134,17 @@ private:
     GlobalHotkey*     m_hotkey     = nullptr;
     GlobalHotkey*     m_undoHotkey = nullptr;
     TranscriptPreview* m_preview   = nullptr;
+    AiCleanup*        m_aiCleanup  = nullptr;
+    WindowWatcher*    m_watcher    = nullptr;
+    int               m_activeProfileIdx = -1; // index into m_settings.profiles; -1 = globals
     TranscriptProcessor m_processor;         // recognition → text-to-inject seam
-    int               m_pendingPartialLen = 0; // chars of the live partial on screen
-    int               m_lastInjectedLen   = 0; // chars of the last committed final
-    bool              m_paused            = false;
-    bool              m_reviewPending     = false;
-    TranscriptProcessor::Result m_pendingResult;  // held for review-mode confirm
+    int               m_pendingPartialLen  = 0; // chars of the live partial on screen
+    int               m_lastInjectedLen    = 0; // chars of the last committed final
+    bool              m_paused             = false;
+    bool              m_reviewPending      = false;
+    TranscriptProcessor::Result m_pendingResult;    // held for review-mode confirm
+    bool              m_aiCleanupPending   = false;
+    TranscriptProcessor::Result m_aiCleanupResult;  // held while API call is in flight
     QSystemTrayIcon*  m_tray       = nullptr;
     QMenu*            m_trayMenu   = nullptr;
     QAction*          m_showAct    = nullptr;

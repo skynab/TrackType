@@ -145,4 +145,45 @@ unsigned int macOptionKey()  { return optionKey; }
 unsigned int macControlKey() { return controlKey; }
 unsigned int macShiftKey()   { return shiftKey; }
 
+// ── Window title query ──────────────────────────────────────────────────────
+
+QString macFrontWindowTitle()
+{
+    NSRunningApplication* frontApp =
+        [[NSWorkspace sharedWorkspace] frontmostApplication];
+    if (!frontApp) return {};
+
+    const pid_t pid = frontApp.processIdentifier;
+
+    // CGWindowListCopyWindowInfo does not require Accessibility permission.
+    // Iterate on-screen windows in front-to-back order; take the first window
+    // that belongs to the frontmost process and has a non-empty name.
+    CFArrayRef list = CGWindowListCopyWindowInfo(
+        kCGWindowListOptionOnScreenOnly | kCGWindowListExcludeDesktopElements,
+        kCGNullWindowID);
+
+    QString title;
+    if (list) {
+        const CFIndex count = CFArrayGetCount(list);
+        for (CFIndex i = 0; i < count; ++i) {
+            NSDictionary* info =
+                (__bridge NSDictionary*)CFArrayGetValueAtIndex(list, i);
+            NSNumber* ownerPid = info[(__bridge NSString*)kCGWindowOwnerPID];
+            if (ownerPid.intValue != pid) continue;
+            NSString* name = info[(__bridge NSString*)kCGWindowName];
+            if (name.length > 0) {
+                title = QString::fromNSString(name);
+                break;
+            }
+        }
+        CFRelease(list);
+    }
+
+    // Fall back to the application name if no window title was found.
+    if (title.isEmpty())
+        title = QString::fromNSString(frontApp.localizedName);
+
+    return title;
+}
+
 #endif // Q_OS_MAC

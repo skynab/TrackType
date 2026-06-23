@@ -40,4 +40,10 @@ unsigned int macCmdKey();
 unsigned int macOptionKey();
 unsigned int macControlKey();
 unsigned int macShiftKey();
+
+// ── Window title query ──────────────────────────────────────────────────────
+// Returns the title of the frontmost application's key window.
+// Uses CGWindowListCopyWindowInfo — does not require Accessibility permission.
+// Returns the localizedName of the frontmost NSRunningApplication as fallback.
+QString macFrontWindowTitle();
 #endif

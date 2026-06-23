@@ -10,6 +10,7 @@
 #include <QFormLayout>
 #include <QGroupBox>
 #include <QLabel>
+#include <QListWidget>
 #include <QPainter>
 #include <QAbstractButton>
 #include <QPushButton>
@@ -260,7 +261,18 @@ void SettingsDialog::retranslateUi()
         m_tabs->setTabText(1, tr("Dictation"));
         m_tabs->setTabText(2, tr("Voice commands"));
         m_tabs->setTabText(3, tr("Substitutions"));
+        m_tabs->setTabText(4, tr("Profiles"));
     }
+    m_profileDetailGroup->setTitle(tr("Profile details"));
+    m_lblProfileName->setText(tr("Name:"));
+    m_profileNameEdit->setPlaceholderText(tr("e.g. Coding"));
+    m_lblProfilePattern->setText(tr("Window pattern (regex):"));
+    m_profilePatternEdit->setPlaceholderText(tr("e.g. .*Code.*|.*Visual Studio.*"));
+    m_lblProfileVocab->setText(tr("Vocabulary hint:"));
+    m_profileVocabEdit->setPlaceholderText(tr("e.g. camelCase, nullptr, std::vector"));
+    m_profileSubTable->setHorizontalHeaderLabels({tr("Misheard"), tr("Intended")});
+    m_btnAddProfile->setText(tr("Add profile"));
+    m_btnRemoveProfile->setText(tr("Remove"));
     m_cmdTable->setHorizontalHeaderLabels({tr("Spoken phrase"), tr("Output")});
     m_subTable->setHorizontalHeaderLabels({tr("Misheard"), tr("Intended")});
     m_btnAddCmd->setText(tr("Add"));
@@ -282,6 +294,9 @@ void SettingsDialog::retranslateUi()
     m_cmbSttLanguage->setItemText(0, tr("Auto-detect"));
     m_lblInitialPrompt->setText(tr("Personal vocabulary:"));
     m_initialPromptEdit->setPlaceholderText(tr("e.g. Stuart, OptiTrack, TrackType"));
+    m_chkAiCleanup->setText(tr("AI cleanup (Claude API)"));
+    m_lblClaudeApiKey->setText(tr("Claude API key:"));
+    m_claudeApiKeyEdit->setPlaceholderText(tr("sk-ant-…"));
     m_lblInjectMode->setText(tr("Type text by:"));
     m_cmbInjectMode->setItemText(0, tr("Simulated keystrokes"));
     m_cmbInjectMode->setItemText(1, tr("Clipboard paste"));
@@ -446,6 +461,15 @@ void SettingsDialog::buildUi()
     m_initialPromptEdit = new QLineEdit;
     m_initialPromptEdit->setPlaceholderText(tr("e.g. Stuart, OptiTrack, TrackType"));
 
+    // AI cleanup
+    m_chkAiCleanup    = new QCheckBox(tr("AI cleanup (Claude API)"));
+    m_lblClaudeApiKey = new QLabel(tr("Claude API key:"));
+    m_claudeApiKeyEdit = new QLineEdit;
+    m_claudeApiKeyEdit->setEchoMode(QLineEdit::Password);
+    m_claudeApiKeyEdit->setPlaceholderText(tr("sk-ant-…"));
+    connect(m_chkAiCleanup, &QCheckBox::toggled, m_lblClaudeApiKey,   &QWidget::setEnabled);
+    connect(m_chkAiCleanup, &QCheckBox::toggled, m_claudeApiKeyEdit,  &QWidget::setEnabled);
+
     connect(m_cmbSttModel, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, [this](int){
         const ModelInfo mi = ModelManager::modelInfo(
@@ -526,6 +550,8 @@ void SettingsDialog::buildUi()
     dfl->addRow(m_lblSttModel,    m_cmbSttModel);
     dfl->addRow(m_lblSttLanguage,   m_cmbSttLanguage);
     dfl->addRow(m_lblInitialPrompt, m_initialPromptEdit);
+    dfl->addRow(m_chkAiCleanup);
+    dfl->addRow(m_lblClaudeApiKey, m_claudeApiKeyEdit);
     dfl->addRow(m_lblInjectMode,    m_cmbInjectMode);
     dfl->addRow(m_chkInjectPartials);
     dfl->addRow(m_chkAutoFormat);
@@ -677,6 +703,124 @@ void SettingsDialog::buildUi()
 
     m_tabs->addTab(subPage, tr("Substitutions"));
 
+    // ── Profiles tab ──────────────────────────────────────────
+    auto* profPage = new QWidget;
+    auto* profLay  = new QVBoxLayout(profPage);
+    profLay->setSpacing(6);
+
+    // Master list — names only; tooltip shows the window pattern
+    m_profileListWidget = new QListWidget;
+    m_profileListWidget->setSelectionMode(QAbstractItemView::SingleSelection);
+    m_profileListWidget->setMaximumHeight(110);
+    profLay->addWidget(m_profileListWidget);
+
+    auto* profListBtns = new QHBoxLayout;
+    m_btnAddProfile    = new QPushButton(tr("Add profile"));
+    m_btnRemoveProfile = new QPushButton(tr("Remove"));
+    m_btnAddProfile->setProperty("flat", true);
+    m_btnRemoveProfile->setProperty("flat", true);
+    profListBtns->addStretch(1);
+    profListBtns->addWidget(m_btnAddProfile);
+    profListBtns->addWidget(m_btnRemoveProfile);
+    profLay->addLayout(profListBtns);
+
+    // Detail panel — enabled only when a profile is selected
+    m_profileDetailGroup = new QGroupBox(tr("Profile details"));
+    m_profileDetailGroup->setEnabled(false);
+    auto* detailLay = new QVBoxLayout(m_profileDetailGroup);
+    detailLay->setSpacing(4);
+
+    auto* detailForm = new QFormLayout;
+    detailForm->setSpacing(5);
+
+    m_lblProfileName   = new QLabel(tr("Name:"));
+    m_profileNameEdit  = new QLineEdit;
+    m_profileNameEdit->setPlaceholderText(tr("e.g. Coding"));
+    detailForm->addRow(m_lblProfileName, m_profileNameEdit);
+
+    m_lblProfilePattern  = new QLabel(tr("Window pattern (regex):"));
+    m_profilePatternEdit = new QLineEdit;
+    m_profilePatternEdit->setPlaceholderText(tr("e.g. .*Code.*|.*Visual Studio.*"));
+    detailForm->addRow(m_lblProfilePattern, m_profilePatternEdit);
+
+    m_lblProfileVocab  = new QLabel(tr("Vocabulary hint:"));
+    m_profileVocabEdit = new QLineEdit;
+    m_profileVocabEdit->setPlaceholderText(tr("e.g. camelCase, nullptr, std::vector"));
+    detailForm->addRow(m_lblProfileVocab, m_profileVocabEdit);
+
+    detailLay->addLayout(detailForm);
+
+    // Per-profile substitution mini-table
+    m_profileSubTable = new QTableWidget(0, 2);
+    m_profileSubTable->setHorizontalHeaderLabels({tr("Misheard"), tr("Intended")});
+    m_profileSubTable->horizontalHeader()->setStretchLastSection(true);
+    m_profileSubTable->verticalHeader()->setVisible(false);
+    m_profileSubTable->setSelectionBehavior(QAbstractItemView::SelectRows);
+    m_profileSubTable->setMaximumHeight(110);
+    detailLay->addWidget(m_profileSubTable);
+
+    auto* profSubBtns    = new QHBoxLayout;
+    m_btnAddProfileSub    = new QPushButton(tr("Add"));
+    m_btnRemoveProfileSub = new QPushButton(tr("Remove"));
+    m_btnAddProfileSub->setProperty("flat", true);
+    m_btnRemoveProfileSub->setProperty("flat", true);
+    profSubBtns->addStretch(1);
+    profSubBtns->addWidget(m_btnAddProfileSub);
+    profSubBtns->addWidget(m_btnRemoveProfileSub);
+    detailLay->addLayout(profSubBtns);
+
+    profLay->addWidget(m_profileDetailGroup);
+    profLay->addStretch(1);
+
+    m_tabs->addTab(profPage, tr("Profiles"));
+
+    // ── Profile list interactions ─────────────────────────────
+    connect(m_btnAddProfile, &QPushButton::clicked, this, [this]{
+        DictationProfile p;
+        p.name = tr("New profile");
+        m_profiles.append(p);
+        auto* item = new QListWidgetItem(p.name);
+        item->setToolTip(p.windowPattern);
+        m_profileListWidget->addItem(item);
+        m_profileListWidget->setCurrentItem(item);
+    });
+    connect(m_btnRemoveProfile, &QPushButton::clicked, this, [this]{
+        const int row = m_profileListWidget->currentRow();
+        if (row < 0 || row >= m_profiles.size()) return;
+        m_profiles.removeAt(row);
+        delete m_profileListWidget->takeItem(row);
+        // After removal, selection moves to whatever Qt picked — reload detail.
+        loadProfileDetail(m_profileListWidget->currentRow());
+    });
+
+    connect(m_profileListWidget, &QListWidget::currentItemChanged, this,
+        [this](QListWidgetItem* current, QListWidgetItem* previous) {
+            if (previous) {
+                // Save the departing profile's edits before loading the new one.
+                const int prevRow = m_profileListWidget->row(previous);
+                if (prevRow >= 0 && prevRow < m_profiles.size()) {
+                    m_profiles[prevRow] = readProfileDetail();
+                    QSignalBlocker bl(m_profileListWidget);
+                    const QString name = m_profiles[prevRow].name;
+                    previous->setText(name.isEmpty() ? tr("(unnamed)") : name);
+                    previous->setToolTip(m_profiles[prevRow].windowPattern);
+                }
+            }
+            loadProfileDetail(current ? m_profileListWidget->row(current) : -1);
+        });
+
+    connect(m_btnAddProfileSub, &QPushButton::clicked, this, [this]{
+        const int r = m_profileSubTable->rowCount();
+        m_profileSubTable->insertRow(r);
+        m_profileSubTable->setItem(r, 0, new QTableWidgetItem);
+        m_profileSubTable->setItem(r, 1, new QTableWidgetItem);
+        m_profileSubTable->editItem(m_profileSubTable->item(r, 0));
+    });
+    connect(m_btnRemoveProfileSub, &QPushButton::clicked, this, [this]{
+        const int r = m_profileSubTable->currentRow();
+        if (r >= 0) m_profileSubTable->removeRow(r);
+    });
+
     // ── Buttons ───────────────────────────────────────────────
     m_buttons  = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
 #ifdef Q_OS_LINUX
@@ -791,6 +935,11 @@ void SettingsDialog::loadFrom(const AppSettings& s)
 
     m_initialPromptEdit->setText(s.initialPrompt);
 
+    m_chkAiCleanup->setChecked(s.aiCleanupEnabled);
+    m_claudeApiKeyEdit->setText(s.claudeApiKey);
+    m_claudeApiKeyEdit->setEnabled(s.aiCleanupEnabled);
+    m_lblClaudeApiKey->setEnabled(s.aiCleanupEnabled);
+
     const int modeIdx = m_cmbInjectMode->findData(int(s.injectionMode));
     m_cmbInjectMode->setCurrentIndex(modeIdx >= 0 ? modeIdx : 0);
     m_chkInjectPartials->setChecked(s.injectPartials);
@@ -824,6 +973,66 @@ void SettingsDialog::loadFrom(const AppSettings& s)
             break;
         }
     }
+
+    // Profiles
+    m_profiles = s.profiles;
+    {
+        QSignalBlocker bl(m_profileListWidget);
+        m_profileListWidget->clear();
+        for (const DictationProfile& p : m_profiles) {
+            auto* item = new QListWidgetItem(p.name.isEmpty() ? tr("(unnamed)") : p.name);
+            item->setToolTip(p.windowPattern);
+            m_profileListWidget->addItem(item);
+        }
+        m_profileListWidget->setCurrentRow(-1);
+    }
+    loadProfileDetail(-1);
+}
+
+// ── Profile master-detail helpers ─────────────────────────────────────────────
+
+DictationProfile SettingsDialog::readProfileDetail() const
+{
+    DictationProfile p;
+    p.name         = m_profileNameEdit->text().trimmed();
+    p.windowPattern= m_profilePatternEdit->text().trimmed();
+    p.vocabularyHint = m_profileVocabEdit->text().trimmed();
+    for (int r = 0; r < m_profileSubTable->rowCount(); ++r) {
+        const QTableWidgetItem* k = m_profileSubTable->item(r, 0);
+        const QTableWidgetItem* v = m_profileSubTable->item(r, 1);
+        const QString key = k ? k->text().trimmed() : QString();
+        if (!key.isEmpty())
+            p.substitutions.insert(key, v ? v->text().trimmed() : QString());
+    }
+    return p;
+}
+
+void SettingsDialog::loadProfileDetail(int row)
+{
+    const bool valid = row >= 0 && row < m_profiles.size();
+    m_profileDetailGroup->setEnabled(valid);
+    QSignalBlocker blkName(m_profileNameEdit);
+    QSignalBlocker blkPat(m_profilePatternEdit);
+    QSignalBlocker blkVoc(m_profileVocabEdit);
+    QSignalBlocker blkTbl(m_profileSubTable);
+    if (!valid) {
+        m_profileNameEdit->clear();
+        m_profilePatternEdit->clear();
+        m_profileVocabEdit->clear();
+        m_profileSubTable->setRowCount(0);
+        return;
+    }
+    const DictationProfile& p = m_profiles.at(row);
+    m_profileNameEdit->setText(p.name);
+    m_profilePatternEdit->setText(p.windowPattern);
+    m_profileVocabEdit->setText(p.vocabularyHint);
+    m_profileSubTable->setRowCount(0);
+    for (auto it = p.substitutions.constBegin(); it != p.substitutions.constEnd(); ++it) {
+        const int r = m_profileSubTable->rowCount();
+        m_profileSubTable->insertRow(r);
+        m_profileSubTable->setItem(r, 0, new QTableWidgetItem(it.key()));
+        m_profileSubTable->setItem(r, 1, new QTableWidgetItem(it.value()));
+    }
 }
 
 AppSettings SettingsDialog::readUi() const
@@ -849,7 +1058,9 @@ AppSettings SettingsDialog::readUi() const
                          && (s.injectionMode == InjectionMode::Type);
     s.autoFormat              = m_chkAutoFormat->isChecked();
     s.reviewBeforeInjecting   = m_chkReviewMode->isChecked();
-    s.initialPrompt           = m_initialPromptEdit->text().trimmed();
+    s.initialPrompt    = m_initialPromptEdit->text().trimmed();
+    s.aiCleanupEnabled = m_chkAiCleanup->isChecked();
+    s.claudeApiKey     = m_claudeApiKeyEdit->text().trimmed();
     s.hotkey           = m_hotkeyEdit->keySequence().toString(QKeySequence::PortableText);
     s.hotkeyPushToTalk = m_chkPushToTalk->isChecked();
     s.undoHotkey       = m_undoHotkeyEdit->keySequence().toString(QKeySequence::PortableText);
@@ -875,6 +1086,18 @@ AppSettings SettingsDialog::readUi() const
         subs.insert(misheard, v ? v->text().trimmed() : QString());
     }
     s.substitutions    = subs;
+
+    // Profiles: start from the working copy; override the currently-selected
+    // row with whatever is live in the detail panel (the user may not have
+    // switched away, so currentItemChanged hasn't saved it yet).
+    s.profiles = m_profiles;
+    const int profileRow = m_profileListWidget->currentRow();
+    if (profileRow >= 0 && profileRow < s.profiles.size()) {
+        s.profiles[profileRow] = readProfileDetail();
+        const QString nm = s.profiles[profileRow].name;
+        if (auto* item = m_profileListWidget->item(profileRow))
+            const_cast<QListWidgetItem*>(item)->setText(nm.isEmpty() ? tr("(unnamed)") : nm);
+    }
 
     s.language         = m_cmbLanguage->currentData().toString();
     return s;

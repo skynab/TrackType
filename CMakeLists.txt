@@ -72,6 +72,8 @@ set(SOURCES
     whisperengine.cpp
     modelmanager.cpp
     modeldownloader.cpp
+    aicleanup.cpp
+    windowwatcher.cpp
     translations/tsparser.cpp
     resources.qrc
 )
@@ -90,6 +92,8 @@ set(HEADERS
     whisperengine.h
     modelmanager.h
     modeldownloader.h
+    aicleanup.h
+    windowwatcher.h
 )
 
 if(WIN32)

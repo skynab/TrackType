@@ -4,12 +4,26 @@
 #include <QCheckBox>
 #include <QKeySequenceEdit>
 #include <QLineEdit>
+#include <QList>
 #include <QMap>
 
 QT_BEGIN_NAMESPACE
+class QGroupBox;
+class QListWidget;
+class QListWidgetItem;
 class QTableWidget;
 class QTabWidget;
 QT_END_NAMESPACE
+
+// A named dictation profile that activates automatically when the foreground
+// window title matches windowPattern (a QRegularExpression, case-insensitive).
+// Empty vocabularyHint / substitutions inherit the global values.
+struct DictationProfile {
+    QString                name;
+    QString                windowPattern;   // regex matched against window title
+    QString                vocabularyHint;  // empty → use global initialPrompt
+    QMap<QString, QString> substitutions;   // empty → use global substitutions
+};
 #include <QDialogButtonBox>
 #include <QGroupBox>
 #include <QLabel>
@@ -66,6 +80,16 @@ struct AppSettings {
     // recognition toward uncommon proper nouns, names, and domain terms.
     QString initialPrompt;
 
+    // AI cleanup: POST the recognized segment to the Claude API for
+    // transcription-error correction before injecting.  The API key is stored
+    // in QSettings without additional encryption (same security level as most
+    // desktop app configuration files).
+    bool    aiCleanupEnabled = false;
+    QString claudeApiKey;
+
+    // Per-application profiles: substitutions + vocabulary matched by window title.
+    QList<DictationProfile> profiles;
+
     // Language (ISO code: "en", "fr", "es", "zh_CN", "ja", "ko", …)
     QString language = "en";
 
@@ -121,6 +145,26 @@ private:
     QPushButton*  m_btnAddSub    = nullptr;
     QPushButton*  m_btnRemoveSub = nullptr;
 
+    // Profiles editor (master-detail within the Profiles tab).
+    QList<DictationProfile> m_profiles;         // working copy while dialog is open
+    QListWidget*  m_profileListWidget   = nullptr;
+    QPushButton*  m_btnAddProfile       = nullptr;
+    QPushButton*  m_btnRemoveProfile    = nullptr;
+    QGroupBox*    m_profileDetailGroup  = nullptr;
+    QLabel*       m_lblProfileName      = nullptr;
+    QLineEdit*    m_profileNameEdit     = nullptr;
+    QLabel*       m_lblProfilePattern   = nullptr;
+    QLineEdit*    m_profilePatternEdit  = nullptr;
+    QLabel*       m_lblProfileVocab     = nullptr;
+    QLineEdit*    m_profileVocabEdit    = nullptr;
+    QTableWidget* m_profileSubTable     = nullptr;
+    QPushButton*  m_btnAddProfileSub    = nullptr;
+    QPushButton*  m_btnRemoveProfileSub = nullptr;
+
+    // Helpers for the master-detail profile editor.
+    DictationProfile readProfileDetail() const;  // detail widgets → DictationProfile
+    void loadProfileDetail(int row);             // DictationProfile → detail widgets
+
     // ── Form-row labels (need retranslation) ──────────────────
     QLabel* m_lblOpacity  = nullptr;
     QLabel* m_lblLanguage = nullptr;
@@ -145,6 +189,9 @@ private:
     QComboBox*   m_cmbSttLanguage     = nullptr;
     QLabel*      m_lblInitialPrompt   = nullptr;
     QLineEdit*   m_initialPromptEdit  = nullptr;
+    QCheckBox*   m_chkAiCleanup      = nullptr;
+    QLabel*      m_lblClaudeApiKey   = nullptr;
+    QLineEdit*   m_claudeApiKeyEdit  = nullptr;
     QLabel*      m_lblInjectMode  = nullptr;
     QComboBox*   m_cmbInjectMode  = nullptr;
     QCheckBox*   m_chkInjectPartials    = nullptr;

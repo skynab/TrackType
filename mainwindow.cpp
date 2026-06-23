@@ -32,6 +32,9 @@
 #include "modeldownloader.h"
 #include "globalhotkey.h"
 #include "transcriptpreview.h"
+#include "aicleanup.h"
+#include "windowwatcher.h"
+#include <QRegularExpression>
 #include <QProgressDialog>
 #include <QDir>
 #include <QKeySequence>
@@ -95,6 +98,8 @@ MainWindow::MainWindow(QTranslator* startupTranslator, QWidget* parent)
     m_settings.sttModel         = m_persist.value("stt/model", "ggml-base.en.bin").toString();
     m_settings.sttLanguage      = m_persist.value("stt/language",       "en").toString();
     m_settings.initialPrompt    = m_persist.value("stt/initialPrompt",   "").toString();
+    m_settings.aiCleanupEnabled = m_persist.value("ai/cleanupEnabled",   false).toBool();
+    m_settings.claudeApiKey     = m_persist.value("ai/apiKey",           "").toString();
     m_settings.injectionMode   = static_cast<InjectionMode>(
                                      m_persist.value("inject/mode", 0).toInt());
     m_settings.injectPartials         = m_persist.value("inject/partials",      false).toBool();
@@ -117,6 +122,21 @@ MainWindow::MainWindow(QTranslator* startupTranslator, QWidget* parent)
     const QStringList subList = m_persist.value("substitutions").toStringList();
     for (int i = 0; i + 1 < subList.size(); i += 2)
         m_settings.substitutions.insert(subList.at(i), subList.at(i + 1));
+
+    // Profiles: list of QVariantMaps
+    const QVariantList profileVar = m_persist.value("profiles").toList();
+    for (const QVariant& pv : profileVar) {
+        const QVariantMap pm = pv.toMap();
+        DictationProfile p;
+        p.name          = pm.value("name").toString();
+        p.windowPattern = pm.value("windowPattern").toString();
+        p.vocabularyHint = pm.value("vocabularyHint").toString();
+        const QStringList psubs = pm.value("substitutions").toStringList();
+        for (int i = 0; i + 1 < psubs.size(); i += 2)
+            p.substitutions.insert(psubs.at(i), psubs.at(i + 1));
+        m_settings.profiles.append(p);
+    }
+
     m_settings.language        = m_persist.value("language",          "en").toString();
     m_settings.edgeLock        = static_cast<EdgeLock>(m_persist.value("window/edgeLock", 0).toInt());
     m_settings.edgeHide        = m_persist.value("window/edgeHide", false).toBool();
@@ -158,6 +178,12 @@ MainWindow::MainWindow(QTranslator* startupTranslator, QWidget* parent)
     initStt();
     setupHotkey();
     setupUndoHotkey();
+
+    // Start polling for foreground-window changes so profile matching stays current.
+    m_watcher = new WindowWatcher(this);
+    connect(m_watcher, &WindowWatcher::windowTitleChanged,
+            this, &MainWindow::onWindowTitleChanged);
+    m_watcher->start(400);
 
     // If launch-on-startup is enabled, make sure the OS registration still
     // exists and points at the current executable (self-heals after updates).
@@ -426,6 +452,49 @@ void MainWindow::initStt()
 {
     m_preview = new TranscriptPreview(this);
 
+    // Enter key inside the review popup commits exactly like the hotkey.
+    connect(m_preview, &TranscriptPreview::commitRequested,
+            this, &MainWindow::commitPendingReview);
+
+    m_aiCleanup = new AiCleanup(this);
+    m_aiCleanup->setApiKey(m_settings.claudeApiKey);
+    m_aiCleanup->setVocabulary(m_settings.initialPrompt);
+
+    connect(m_aiCleanup, &AiCleanup::cleaned, this, [this](const QString& text) {
+        if (!m_aiCleanupPending)
+            return;
+        m_aiCleanupPending = false;
+        TranscriptProcessor::Result r = m_aiCleanupResult;
+        m_aiCleanupResult = {};
+        r.text = text;
+        if (m_settings.reviewBeforeInjecting) {
+            m_pendingResult = r;
+            m_reviewPending = true;
+            if (m_preview) m_preview->showPendingReview(r.text, frameGeometry());
+            return;
+        }
+        if (m_preview) m_preview->hide();
+        injectResult(r);
+    });
+
+    connect(m_aiCleanup, &AiCleanup::failed, this, [this](const QString& error) {
+        if (!m_aiCleanupPending)
+            return;
+        qWarning("TrackType AI cleanup failed: %s", qUtf8Printable(error));
+        m_aiCleanupPending = false;
+        TranscriptProcessor::Result r = m_aiCleanupResult;
+        m_aiCleanupResult = {};
+        // Fall through with the pre-cleanup result so dictation is never lost.
+        if (m_settings.reviewBeforeInjecting) {
+            m_pendingResult = r;
+            m_reviewPending = true;
+            if (m_preview) m_preview->showPendingReview(r.text, frameGeometry());
+            return;
+        }
+        if (m_preview) m_preview->hide();
+        injectResult(r);
+    });
+
     m_stt = new WhisperSttEngine(this);
     m_stt->setLanguage(m_settings.sttLanguage);
     m_stt->setInitialPrompt(m_settings.initialPrompt);
@@ -562,8 +631,8 @@ void MainWindow::onSttPartial(const QString& raw)
 {
     qInfo("TrackType STT (partial) > %s", qUtf8Printable(raw));
 
-    // Don't disturb the review popup or inject partials while waiting for commit.
-    if (m_reviewPending)
+    // Don't disturb the review/cleanup popup or inject partials while waiting.
+    if (m_reviewPending || m_aiCleanupPending)
         return;
 
     // Always preview the would-be-typed text near the toolbar.
@@ -619,6 +688,16 @@ void MainWindow::onSttFinal(const QString& raw)
         return;
     }
 
+    // AI cleanup: send to Claude for transcription-error correction.
+    // If a call is already in flight (rare), fall through and inject directly.
+    if (m_settings.aiCleanupEnabled && m_aiCleanup && !m_aiCleanupPending) {
+        m_aiCleanupPending = true;
+        m_aiCleanupResult  = r;
+        if (m_preview) m_preview->showText(tr("Cleaning up…"), frameGeometry());
+        m_aiCleanup->clean(r.text);
+        return;
+    }
+
     if (m_settings.reviewBeforeInjecting) {
         // Hold for review: show in preview with action hint, don't inject yet.
         m_pendingResult = r;
@@ -653,9 +732,18 @@ void MainWindow::commitPendingReview()
     if (!m_reviewPending)
         return;
     m_reviewPending = false;
-    const TranscriptProcessor::Result r = m_pendingResult;
+    TranscriptProcessor::Result r = m_pendingResult;
     m_pendingResult = {};
-    if (m_preview) m_preview->hide();
+    if (m_preview) {
+        // Use whatever is in the edit widget — the user may have typed corrections.
+        const QString edited = m_preview->text();
+        if (!edited.isEmpty())
+            r.text = edited;
+        // Automatic cursor repositioning (e.g. for the "brackets" command) doesn't
+        // apply once the user has had a chance to review and edit the text.
+        r.cursorBack = 0;
+        m_preview->hide();
+    }
     injectResult(r);
 }
 
@@ -694,8 +782,10 @@ void MainWindow::onDictateToggled(bool on)
     } else {
         if (m_stt)   m_stt->stop();
         if (m_audio) m_audio->stop();
-        m_pendingPartialLen = 0;
-        m_paused = false;
+        m_pendingPartialLen  = 0;
+        m_paused             = false;
+        m_aiCleanupPending   = false;
+        m_aiCleanupResult    = {};
         cancelPendingReview();
         if (m_preview) m_preview->hide();
 
@@ -1189,6 +1279,8 @@ void MainWindow::applySettings(const AppSettings& s)
     m_persist.setValue("stt/model",          s.sttModel);
     m_persist.setValue("stt/language",       s.sttLanguage);
     m_persist.setValue("stt/initialPrompt",  s.initialPrompt);
+    m_persist.setValue("ai/cleanupEnabled",  s.aiCleanupEnabled);
+    m_persist.setValue("ai/apiKey",          s.claudeApiKey);
     m_persist.setValue("inject/mode",        int(s.injectionMode));
     m_persist.setValue("inject/partials",    s.injectPartials);
     m_persist.setValue("inject/autoFormat",  s.autoFormat);
@@ -1205,6 +1297,20 @@ void MainWindow::applySettings(const AppSettings& s)
     for (auto it = s.substitutions.constBegin(); it != s.substitutions.constEnd(); ++it)
         subList << it.key() << it.value();
     m_persist.setValue("substitutions",      subList);
+
+    QVariantList profileVar;
+    for (const DictationProfile& p : s.profiles) {
+        QVariantMap pm;
+        pm["name"]          = p.name;
+        pm["windowPattern"] = p.windowPattern;
+        pm["vocabularyHint"]= p.vocabularyHint;
+        QStringList psubs;
+        for (auto it = p.substitutions.constBegin(); it != p.substitutions.constEnd(); ++it)
+            psubs << it.key() << it.value();
+        pm["substitutions"] = psubs;
+        profileVar.append(pm);
+    }
+    m_persist.setValue("profiles", profileVar);
     m_persist.setValue("language",           s.language);
 
     // Switch the live capture to the chosen microphone (restarts capture if the
@@ -1232,9 +1338,62 @@ void MainWindow::applySettings(const AppSettings& s)
         if (s.sttModel != oldSttModel)
             ensureModelThenStart();   // m_settings already updated above
     }
+    if (m_aiCleanup) {
+        m_aiCleanup->setApiKey(s.claudeApiKey);
+        m_aiCleanup->setVocabulary(s.initialPrompt);
+    }
+
+    // Re-evaluate profile matching: force the check even if the window title
+    // hasn't changed (profiles or global vocab/subs may have been edited).
+    m_activeProfileIdx = -2;   // sentinel: neither "no profile" (-1) nor any valid index
+    onWindowTitleChanged(m_watcher ? m_watcher->currentTitle() : QString());
+
     m_persist.setValue("window/edgeLock",    static_cast<int>(s.edgeLock));
     m_persist.setValue("window/edgeHide",    s.edgeHide);
     applyEdgeLock();
+}
+
+// ── Profile matching ──────────────────────────────────────────────────────────
+
+void MainWindow::onWindowTitleChanged(const QString& title)
+{
+    const auto& profiles = m_settings.profiles;
+    for (int i = 0; i < profiles.size(); ++i) {
+        const QString& pat = profiles.at(i).windowPattern;
+        if (pat.isEmpty()) continue;
+        const QRegularExpression re(pat, QRegularExpression::CaseInsensitiveOption);
+        if (!re.isValid()) continue;
+        if (re.match(title).hasMatch()) {
+            applyProfile(i);
+            return;
+        }
+    }
+    applyProfile(-1);   // no profile matched — use global settings
+}
+
+void MainWindow::applyProfile(int idx)
+{
+    if (idx == m_activeProfileIdx) return;
+    m_activeProfileIdx = idx;
+
+    QString vocab;
+    QMap<QString, QString> subs;
+
+    if (idx >= 0 && idx < m_settings.profiles.size()) {
+        const DictationProfile& p = m_settings.profiles.at(idx);
+        // Empty fields fall back to the global values so a profile can override
+        // just one dimension (e.g. vocab only) without losing the other.
+        vocab = p.vocabularyHint.isEmpty() ? m_settings.initialPrompt : p.vocabularyHint;
+        subs  = p.substitutions.isEmpty()  ? m_settings.substitutions  : p.substitutions;
+        qInfo("TrackType profile: '%s'", qUtf8Printable(p.name));
+    } else {
+        vocab = m_settings.initialPrompt;
+        subs  = m_settings.substitutions;
+    }
+
+    if (m_stt)       m_stt->setInitialPrompt(vocab);
+    if (m_aiCleanup) m_aiCleanup->setVocabulary(vocab);
+    m_processor.setSubstitutions(subs);
 }
 
 void MainWindow::onExitClicked()
