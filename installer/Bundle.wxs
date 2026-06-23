@@ -6,7 +6,7 @@
   <Bundle Name="TrackType"
           Version="0.9.2.$(var.BuildNumber)"
           Manufacturer="OptiTrack"
-          UpgradeCode="B2C3D4E5-F6A7-8901-BCDE-F12345678901"
+          UpgradeCode="90E90BF8-824A-4BB2-8B23-6D7CA4091DDF"
           IconSourceFile="icons\TrackType.ico">
 
     <BootstrapperApplication>
